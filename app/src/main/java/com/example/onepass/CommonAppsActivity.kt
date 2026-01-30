@@ -11,6 +11,8 @@ import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
+data class AppInfo(val label: String, val packageName: String, val icon: Drawable, var selected: Boolean)
+
 class CommonAppsActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "CommonAppsActivity"
@@ -18,6 +20,8 @@ class CommonAppsActivity : AppCompatActivity() {
     
     private lateinit var searchEdit: SearchView
     private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: AppAdapter
+    private val apps = mutableListOf<AppInfo>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,15 +36,17 @@ class CommonAppsActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerViewApps)
         recyclerView.layoutManager = LinearLayoutManager(this)
         
-        testAppScanning(packageManager)
-        
-        recyclerView.adapter = SimpleAdapter()
+        loadApps(packageManager)
+        adapter = AppAdapter(apps)
+        recyclerView.adapter = adapter
         
         searchEdit.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return false
             }
             override fun onQueryTextChange(newText: String?): Boolean {
+                val q = (newText ?: "").trim().lowercase()
+                adapter.filter(q)
                 return true
             }
         })
@@ -54,8 +60,10 @@ class CommonAppsActivity : AppCompatActivity() {
         Log.d(TAG, "CommonAppsActivity onCreate 完成")
     }
 
-    private fun testAppScanning(packageManager: PackageManager) {
-        Log.d(TAG, "testAppScanning 开始测试应用扫描")
+    private fun loadApps(packageManager: PackageManager) {
+        Log.d(TAG, "loadApps 开始加载应用列表")
+        
+        apps.clear()
         
         try {
             val applicationInfos = packageManager.getInstalledApplications(0)
@@ -68,39 +76,61 @@ class CommonAppsActivity : AppCompatActivity() {
                     
                     try {
                         val appName = applicationInfos[i].loadLabel(packageManager).toString()
-                        Log.d(TAG, "  -> 应用名称: $appName")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "  -> 获取应用名称失败: ${e.message}", e)
-                    }
-                    
-                    try {
                         val icon = applicationInfos[i].loadIcon(packageManager)
-                        Log.d(TAG, "  -> 应用图标获取成功: ${icon != null}")
+                        
+                        val appInfo = AppInfo(appName, packageName, icon, false)
+                        apps.add(appInfo)
+                        
+                        Log.d(TAG, "  -> 添加到列表: $appName")
                     } catch (e: Exception) {
-                        Log.e(TAG, "  -> 获取应用图标失败: ${e.message}", e)
+                        Log.e(TAG, "  -> 处理应用失败: ${e.message}", e)
+                        continue
                     }
                 }
             }
             
-            Log.d(TAG, "应用扫描测试完成")
+            Log.d(TAG, "应用扫描完成，共添加 ${apps.size} 个应用")
+            apps.sortBy { it.label.lowercase() }
+            Log.d(TAG, "应用列表已排序")
         } catch (e: Exception) {
-            Log.e(TAG, "应用扫描测试出错: ${e.message}", e)
+            Log.e(TAG, "加载应用列表时出错: ${e.message}", e)
         }
     }
 
-    inner class SimpleAdapter : RecyclerView.Adapter<SimpleAdapter.ViewHolder>() {
+    inner class AppAdapter(private val items: List<AppInfo>) : RecyclerView.Adapter<AppAdapter.ViewHolder>() {
+        private var displayItems = items.toList()
+        fun filter(query: String) {
+            displayItems = if (query.isEmpty()) items else items.filter { it.label.lowercase().contains(query) }
+            notifyDataSetChanged()
+            Log.d(TAG, "搜索过滤: 查询='$query', 结果数=${displayItems.size}")
+        }
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
-            val view = android.view.LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_app, parent, false)
+            val view = android.view.LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false)
             return ViewHolder(view)
         }
-
-        override fun getItemCount(): Int = 0
-
+        override fun getItemCount(): Int = displayItems.size
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val app = displayItems[position]
+            holder.bind(app)
         }
-
         inner class ViewHolder(itemView: android.view.View) : RecyclerView.ViewHolder(itemView) {
+            private val icon: android.widget.ImageView = itemView.findViewById(R.id.appIcon)
+            private val label: android.widget.TextView = itemView.findViewById(R.id.appLabel)
+            private val check: android.widget.CheckBox = itemView.findViewById(R.id.appSelected)
+            fun bind(app: AppInfo) {
+                icon.setImageDrawable(app.icon)
+                label.text = app.label
+                check.isChecked = app.selected
+                itemView.setOnClickListener {
+                    app.selected = !app.selected
+                    check.isChecked = app.selected
+                    Log.d(TAG, "应用点击: ${app.label}, 选中状态: ${app.selected}")
+                }
+                check.setOnCheckedChangeListener { _, isChecked -> 
+                    app.selected = isChecked
+                    Log.d(TAG, "应用切换: ${app.label}, 选中状态: $isChecked")
+                }
+            }
         }
     }
 }
