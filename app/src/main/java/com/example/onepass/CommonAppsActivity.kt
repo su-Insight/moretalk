@@ -1,5 +1,6 @@
 package com.example.onepass
 
+import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
@@ -12,11 +13,15 @@ import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-data class AppInfo(val label: String, val packageName: String, val icon: Drawable, var selected: Boolean)
+data class AppInfo(val label: String, val packageName: String, val icon: Drawable, var selected: Boolean, val order: Int = 0)
 
 class CommonAppsActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "CommonAppsActivity"
+        private const val PREFS = "common_apps_prefs"
+        private const val KEY_COMMON_APPS = "common_apps"
+        private const val KEY_APP_ORDERS = "app_orders"
+        private const val MAX_COMMON_APPS = 6
     }
     
     private lateinit var searchEdit: SearchView
@@ -54,6 +59,24 @@ class CommonAppsActivity : AppCompatActivity() {
         
         findViewById<Button>(R.id.btnDone).setOnClickListener {
             Log.d(TAG, "完成按钮被点击")
+            
+            // 保存选中的应用
+            val selectedApps = apps.filter { it.selected }
+            val selectedPackageNames = selectedApps.map { it.packageName }.toSet()
+            
+            // 为选中的应用分配排序值
+            val appOrders = mutableMapOf<String, Int>()
+            selectedApps.forEachIndexed { index, app ->
+                appOrders[app.packageName] = index
+            }
+            
+            getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putStringSet(KEY_COMMON_APPS, selectedPackageNames)
+                .putString(KEY_APP_ORDERS, formatAppOrders(appOrders))
+                .apply()
+            
+            Log.d(TAG, "保存了 ${selectedApps.size} 个常用应用")
             Toast.makeText(this, "常用应用已保存", Toast.LENGTH_SHORT).show()
             finish()
         }
@@ -66,10 +89,28 @@ class CommonAppsActivity : AppCompatActivity() {
         
         apps.clear()
         
+        // 从 SharedPreferences 加载已保存的应用列表
+        val savedApps = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getStringSet(KEY_COMMON_APPS, HashSet<String>()) ?: HashSet()
+        
+        // 从 SharedPreferences 加载应用排序信息
+        val savedOrders = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(KEY_APP_ORDERS, null)
+        val appOrders = if (savedOrders != null) {
+            try {
+                parseAppOrders(savedOrders)
+            } catch (e: Exception) {
+                emptyMap()
+            }
+        } else {
+            emptyMap()
+        }
+        
         try {
             val applicationInfos = packageManager.getInstalledApplications(0)
             Log.d(TAG, "扫描到应用总数: ${applicationInfos.size}")
             
+            var currentOrder = 0
             for (applicationInfo in applicationInfos) {
                 val packageName = applicationInfo.packageName
                 
@@ -95,10 +136,14 @@ class CommonAppsActivity : AppCompatActivity() {
                         continue
                     }
                     
-                    val appInfo = AppInfo(appName, packageName, icon, false)
+                    // 检查是否已在保存的列表中
+                    val isSelected = savedApps.contains(packageName)
+                    // 获取应用的排序值
+                    val order = appOrders[packageName] ?: currentOrder++
+                    val appInfo = AppInfo(appName, packageName, icon, isSelected, order)
                     apps.add(appInfo)
                     
-                    Log.d(TAG, "  -> 添加到列表: $appName")
+                    Log.d(TAG, "  -> 添加到列表: $appName, 选中状态: $isSelected, 排序: $order")
                 } catch (e: Exception) {
                     Log.e(TAG, "  -> 处理应用失败: ${e.message}", e)
                     continue
@@ -106,7 +151,19 @@ class CommonAppsActivity : AppCompatActivity() {
             }
             
             Log.d(TAG, "应用扫描完成，共添加 ${apps.size} 个应用")
-            apps.sortBy { it.label.lowercase() }
+            // 先按选中状态排序，再按排序值排序，最后按名称排序
+            apps.sortWith(Comparator {
+                    app1, app2 ->
+                if (app1.selected && !app2.selected) {
+                    -1
+                } else if (!app1.selected && app2.selected) {
+                    1
+                } else if (app1.order != app2.order) {
+                    app1.order.compareTo(app2.order)
+                } else {
+                    app1.label.compareTo(app2.label, ignoreCase = true)
+                }
+            })
             Log.d(TAG, "应用列表已排序")
         } catch (e: Exception) {
             Log.e(TAG, "加载应用列表时出错: ${e.message}", e)
@@ -285,12 +342,41 @@ class CommonAppsActivity : AppCompatActivity() {
         return appName.count { it == '.' } >= 2
     }
 
+    private fun parseAppOrders(ordersString: String): Map<String, Int> {
+        val orders = mutableMapOf<String, Int>()
+        val pairs = ordersString.split(",")
+        for (pair in pairs) {
+            val parts = pair.split(":")
+            if (parts.size == 2) {
+                try {
+                    orders[parts[0]] = parts[1].toInt()
+                } catch (e: Exception) {
+                    // 忽略解析错误
+                }
+            }
+        }
+        return orders
+    }
+
+    private fun formatAppOrders(orders: Map<String, Int>): String {
+        val pairs = mutableListOf<String>()
+        for ((packageName, order) in orders) {
+            pairs.add("$packageName:$order")
+        }
+        return pairs.joinToString(",")
+    }
+
     inner class AppAdapter(private val items: List<AppInfo>) : RecyclerView.Adapter<AppAdapter.ViewHolder>() {
         private var displayItems = items.toList()
         fun filter(query: String) {
             displayItems = if (query.isEmpty()) items else items.filter { it.label.lowercase().contains(query) }
             notifyDataSetChanged()
             Log.d(TAG, "搜索过滤: 查询='$query', 结果数=${displayItems.size}")
+        }
+        fun updateDisplayItems() {
+            displayItems = items.toList()
+            notifyDataSetChanged()
+            Log.d(TAG, "更新显示列表, 结果数=${displayItems.size}")
         }
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
             val view = android.view.LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false)
@@ -304,17 +390,55 @@ class CommonAppsActivity : AppCompatActivity() {
         inner class ViewHolder(itemView: android.view.View) : RecyclerView.ViewHolder(itemView) {
             private val icon: android.widget.ImageView = itemView.findViewById(R.id.appIcon)
             private val label: android.widget.TextView = itemView.findViewById(R.id.appLabel)
-            private val check: android.widget.CheckBox = itemView.findViewById(R.id.appSelected)
+            private val check: android.widget.Switch = itemView.findViewById(R.id.appSelected)
             fun bind(app: AppInfo) {
                 icon.setImageDrawable(app.icon)
                 label.text = app.label
                 check.isChecked = app.selected
+                
+                // 设置已启用应用的背景色
+                if (app.selected) {
+                    itemView.setBackgroundColor(itemView.resources.getColor(android.R.color.holo_blue_light, null))
+                } else {
+                    itemView.setBackgroundColor(itemView.resources.getColor(android.R.color.transparent, null))
+                }
+                
                 itemView.setOnClickListener {
-                    app.selected = !app.selected
-                    check.isChecked = app.selected
-                    Log.d(TAG, "应用点击: ${app.label}, 选中状态: ${app.selected}")
+                    if (app.selected) {
+                        // 取消选择
+                        app.selected = false
+                        check.isChecked = false
+                        itemView.setBackgroundColor(itemView.resources.getColor(android.R.color.transparent, null))
+                        Log.d(TAG, "应用点击: ${app.label}, 选中状态: false")
+                    } else {
+                        // 检查是否超过最大选择数量
+                        val selectedCount = apps.count { it.selected }
+                        if (selectedCount >= MAX_COMMON_APPS) {
+                            Toast.makeText(itemView.context, "最多只能选择6个应用", Toast.LENGTH_SHORT).show()
+                            Log.d(TAG, "应用点击: ${app.label}, 已达到最大选择数量")
+                            return@setOnClickListener
+                        }
+                        // 选择应用
+                        app.selected = true
+                        check.isChecked = true
+                        itemView.setBackgroundColor(itemView.resources.getColor(android.R.color.holo_blue_light, null))
+                        Log.d(TAG, "应用点击: ${app.label}, 选中状态: true")
+                    }
                 }
                 check.setOnCheckedChangeListener { _, isChecked -> 
+                    if (isChecked) {
+                        // 检查是否超过最大选择数量
+                        val selectedCount = apps.count { it.selected }
+                        if (selectedCount >= MAX_COMMON_APPS) {
+                            check.isChecked = false
+                            Toast.makeText(itemView.context, "最多只能选择6个应用", Toast.LENGTH_SHORT).show()
+                            Log.d(TAG, "应用切换: ${app.label}, 已达到最大选择数量")
+                            return@setOnCheckedChangeListener
+                        }
+                        itemView.setBackgroundColor(itemView.resources.getColor(android.R.color.holo_blue_light, null))
+                    } else {
+                        itemView.setBackgroundColor(itemView.resources.getColor(android.R.color.transparent, null))
+                    }
                     app.selected = isChecked
                     Log.d(TAG, "应用切换: ${app.label}, 选中状态: $isChecked")
                 }
