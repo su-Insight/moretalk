@@ -173,15 +173,78 @@
         </androidx.cardview.widget.CardView>
 
         <!-- 常用应用 -->
-        <Button
-            android:id="@+id/btnCommonApps"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/commonAppsCard"
             android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:text="常用应用"
+            android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/iconSizeCard" />
+            app:layout_constraintTop_toBottomOf="@id/iconSizeCard">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/textCommonAppsTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="常用应用"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <Button
+                    android:id="@+id/btnCommonApps"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="管理"
+                    android:textSize="12sp"
+                    android:minHeight="32dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/textCommonAppsTitle" />
+
+                <HorizontalScrollView
+                    android:id="@+id/commonAppsScrollView"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:scrollbars="none"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/textCommonAppsTitle">
+
+                    <LinearLayout
+                        android:id="@+id/commonAppsContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal" />
+
+                </HorizontalScrollView>
+
+                <TextView
+                    android:id="@+id/textNoCommonApps"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="暂无常用应用"
+                    android:textSize="14sp"
+                    android:textColor="#999999"
+                    android:gravity="center"
+                    android:padding="16dp"
+                    android:visibility="gone"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/textCommonAppsTitle" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.cardview.widget.CardView>
 
         <!-- 天气设置 -->
         <androidx.cardview.widget.CardView
@@ -193,7 +256,7 @@
             app:cardElevation="2dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/btnCommonApps">
+            app:layout_constraintTop_toBottomOf="@id/commonAppsCard">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"

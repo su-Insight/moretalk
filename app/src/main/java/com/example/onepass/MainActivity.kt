@@ -462,10 +462,10 @@ class MainActivity : AppCompatActivity() {
                 // 创建应用图标（增大尺寸）
                 val iconView = ImageView(this)
                 iconView.setImageDrawable(appIcon)
-                iconView.layoutParams = LinearLayout.LayoutParams(64, 64)
+                iconView.layoutParams = LinearLayout.LayoutParams(100, 100)
                 iconView.setPadding(0, 0, 0, 8)
                 
-                // 创建应用名称（增大字体）
+                // 创建应用名称
                 val nameView = TextView(this)
                 nameView.text = appName
                 nameView.setTextColor(resources.getColor(android.R.color.black, null))

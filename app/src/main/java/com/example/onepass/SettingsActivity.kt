@@ -29,9 +29,13 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var switchWeather: android.widget.Switch
     private lateinit var seekBarWeatherVol: SeekBar
     private lateinit var textWeatherVol: TextView
+    private lateinit var commonAppsScrollView: android.widget.HorizontalScrollView
+    private lateinit var commonAppsContainer: android.widget.LinearLayout
+    private lateinit var textNoCommonApps: TextView
 
     private var isLoggedIn = false
     private val PREFS_NAME = "OnePassPrefs"
+    private val COMMON_APPS_PREFS = "common_apps_prefs"
     private val KEY_DATE_STYLE = "date_style"
     private val VALUE_LUNAR = "lunar"
     private val VALUE_SOLAR = "solar"
@@ -51,6 +55,13 @@ class SettingsActivity : AppCompatActivity() {
         updateUserStatus()
     }
 
+    override fun onResume() {
+        super.onResume()
+        val commonAppsSet = getSharedPreferences(COMMON_APPS_PREFS, Context.MODE_PRIVATE)
+            .getStringSet(KEY_COMMON_APPS, HashSet<String>())
+        loadCommonApps(commonAppsSet)
+    }
+
     private fun initViews() {
         backButton = findViewById(R.id.backButton)
         userAvatar = findViewById(R.id.userAvatar)
@@ -68,6 +79,9 @@ class SettingsActivity : AppCompatActivity() {
         switchWeather = findViewById(R.id.switchWeather)
         seekBarWeatherVol = findViewById(R.id.seekBarWeatherVol)
         textWeatherVol = findViewById(R.id.textWeatherVol)
+        commonAppsScrollView = findViewById(R.id.commonAppsScrollView)
+        commonAppsContainer = findViewById(R.id.commonAppsContainer)
+        textNoCommonApps = findViewById(R.id.textNoCommonApps)
     }
 
     private fun loadSettings() {
@@ -88,8 +102,7 @@ class SettingsActivity : AppCompatActivity() {
         seekBarWeatherVol.isEnabled = weatherEnabled
 
         val commonAppsSet = prefs.getStringSet(KEY_COMMON_APPS, HashSet<String>())
-        val display = if (!commonAppsSet.isNullOrEmpty()) commonAppsSet!!.joinToString(", ") else "未选择"
-        btnCommonApps.text = "常用应用: ${display}"
+        loadCommonApps(commonAppsSet)
     }
 
     private fun setupListeners() {
@@ -179,5 +192,132 @@ class SettingsActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, "无法设置为默认桌面", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun loadCommonApps(commonAppsSet: Set<String>?) {
+        commonAppsContainer.removeAllViews()
+        
+        if (commonAppsSet.isNullOrEmpty()) {
+            commonAppsScrollView.visibility = android.view.View.GONE
+            textNoCommonApps.visibility = android.view.View.VISIBLE
+            return
+        }
+        
+        commonAppsScrollView.visibility = android.view.View.VISIBLE
+        textNoCommonApps.visibility = android.view.View.GONE
+        
+        // 从 SharedPreferences 加载应用排序信息
+        val savedOrders = getSharedPreferences(COMMON_APPS_PREFS, Context.MODE_PRIVATE)
+            .getString("app_orders", null)
+        val appOrders = if (savedOrders != null) {
+            try {
+                parseAppOrders(savedOrders)
+            } catch (e: Exception) {
+                emptyMap()
+            }
+        } else {
+            emptyMap()
+        }
+        
+        // 按排序值对应用进行排序
+        val sortedApps = commonAppsSet.sortedWith(Comparator {
+                app1, app2 ->
+            val order1 = appOrders[app1] ?: Int.MAX_VALUE
+            val order2 = appOrders[app2] ?: Int.MAX_VALUE
+            order1.compareTo(order2)
+        })
+        
+        for (packageName in sortedApps) {
+            try {
+                val packageInfo = packageManager.getPackageInfo(packageName, 0)
+                val appName = packageInfo.applicationInfo?.loadLabel(packageManager)?.toString() ?: packageName
+                val appIcon = packageInfo.applicationInfo?.loadIcon(packageManager)
+                
+                if (appIcon == null) {
+                    continue
+                }
+                
+                // 创建应用项布局
+                val appItemLayout = android.widget.LinearLayout(this)
+                appItemLayout.orientation = android.widget.LinearLayout.VERTICAL
+                appItemLayout.gravity = android.view.Gravity.CENTER
+                val layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                layoutParams.setMargins(16, 0, 16, 0)
+                appItemLayout.layoutParams = layoutParams
+                
+                // 创建应用图标
+                val iconView = android.widget.ImageView(this)
+                iconView.setImageDrawable(appIcon)
+                val iconParams = android.widget.LinearLayout.LayoutParams(64, 64)
+                iconParams.setMargins(0, 0, 0, 0)
+                iconView.layoutParams = iconParams
+                
+                // 添加到应用项布局
+                appItemLayout.addView(iconView)
+                
+                // 添加点击事件
+                appItemLayout.setOnClickListener {
+                    try {
+                        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+                        if (launchIntent != null) {
+                            startActivity(launchIntent)
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(this, "启动应用失败", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                
+                // 添加到容器
+                commonAppsContainer.addView(appItemLayout)
+            } catch (e: Exception) {
+                continue
+            }
+        }
+        
+        // 为未使用的名额添加虚线框，总共最多6个
+        val MAX_COMMON_APPS = 6
+        val remainingSlots = MAX_COMMON_APPS - sortedApps.size
+        if (remainingSlots > 0) {
+            for (i in 0 until remainingSlots) {
+                // 创建虚线框布局
+                val emptySlotLayout = android.widget.LinearLayout(this)
+                emptySlotLayout.orientation = android.widget.LinearLayout.VERTICAL
+                emptySlotLayout.gravity = android.view.Gravity.CENTER
+                val layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                layoutParams.setMargins(16, 0, 16, 0)
+                emptySlotLayout.layoutParams = layoutParams
+                
+                // 创建虚线框
+                val borderView = android.view.View(this)
+                val borderParams = android.widget.LinearLayout.LayoutParams(64, 64)
+                borderParams.setMargins(0, 0, 0, 0)
+                borderView.layoutParams = borderParams
+                borderView.setBackgroundResource(R.drawable.dashed_border)
+                
+                emptySlotLayout.addView(borderView)
+                commonAppsContainer.addView(emptySlotLayout)
+            }
+        }
+    }
+
+    private fun parseAppOrders(ordersString: String): Map<String, Int> {
+        val orders = mutableMapOf<String, Int>()
+        val pairs = ordersString.split(",")
+        for (pair in pairs) {
+            val parts = pair.split(":")
+            if (parts.size == 2) {
+                try {
+                    orders[parts[0]] = parts[1].toInt()
+                } catch (e: Exception) {
+                }
+            }
+        }
+        return orders
     }
 }
