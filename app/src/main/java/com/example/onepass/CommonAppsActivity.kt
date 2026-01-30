@@ -1,6 +1,7 @@
 package com.example.onepass
 
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -70,6 +71,13 @@ class CommonAppsActivity : AppCompatActivity() {
                         Log.d(TAG, "  -> 应用名称: $appName")
                     } catch (e: Exception) {
                         Log.e(TAG, "  -> 获取应用名称失败: ${e.message}", e)
+                    }
+                    
+                    try {
+                        val icon = applicationInfos[i].loadIcon(packageManager)
+                        Log.d(TAG, "  -> 应用图标获取成功: ${icon != null}")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "  -> 获取应用图标失败: ${e.message}", e)
                     }
                 }
             }
