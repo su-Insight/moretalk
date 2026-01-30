@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/contactName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="联系人名称"
+        android:textSize="20sp"
+        android:textColor="#333333"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <!-- 微信视频 -->
+    <LinearLayout
+        android:id="@+id/rowWechatVideo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/btnWechatVideo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="微信视频"
+            android:textColor="#ffffff"
+            android:background="@android:color/holo_blue_dark"
+            android:minHeight="48dp" />
+
+        <Button
+            android:id="@+id/btnPlayWechatVideo"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:text="▶"
+            android:textColor="#ffffff"
+            android:background="@android:color/holo_blue_light"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+    <!-- 微信语音 -->
+    <LinearLayout
+        android:id="@+id/rowWechatVoice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/btnWechatVoice"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="微信语音"
+            android:textColor="#ffffff"
+            android:background="@android:color/holo_green_dark"
+            android:minHeight="48dp" />
+
+        <Button
+            android:id="@+id/btnPlayWechatVoice"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:text="▶"
+            android:textColor="#ffffff"
+            android:background="@android:color/holo_green_light"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+    <!-- 拨打电话 -->
+    <LinearLayout
+        android:id="@+id/rowPhoneCall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/btnPhoneCall"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="拨打电话"
+            android:textColor="#ffffff"
+            android:background="@android:color/holo_orange_dark"
+            android:minHeight="48dp" />
+
+        <Button
+            android:id="@+id/btnPlayPhoneCall"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:text="▶"
+            android:textColor="#ffffff"
+            android:background="@android:color/holo_orange_light"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

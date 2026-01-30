@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:gravity="center">
+
+    <ImageView
+        android:id="@+id/contactImage"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:scaleType="centerCrop"
+        android:src="@android:drawable/ic_menu_myplaces"
+        android:contentDescription="联系人头像" />
+
+    <TextView
+        android:id="@+id/contactWechatNote"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="微信备注"
+        android:textSize="18sp"
+        android:textColor="#333333"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/contactPhoneNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="手机号"
+        android:textSize="16sp"
+        android:textColor="#666666"
+        android:layout_marginTop="8dp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+</LinearLayout>

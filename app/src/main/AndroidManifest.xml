@@ -2,6 +2,12 @@
 <manifest package="com.example.onepass" xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+  <uses-permission android:name="android.permission.CALL_PHONE" />
+  <uses-feature android:name="android.hardware.camera" android:required="false" />
+  <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
   <application
       android:allowBackup="true"
       android:icon="@mipmap/ic_launcher"
@@ -9,6 +15,15 @@
       android:roundIcon="@mipmap/ic_launcher_round"
       android:supportsRtl="true"
       android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+    <provider
+        android:name="androidx.core.content.FileProvider"
+        android:authorities="com.example.onepass.fileprovider"
+        android:exported="false"
+        android:grantUriPermissions="true">
+      <meta-data
+          android:name="android.support.FILE_PROVIDER_PATHS"
+          android:resource="@xml/file_paths" />
+    </provider>
     <activity android:name=".MainActivity" android:exported="true">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
@@ -17,5 +32,8 @@
     </activity>
     <activity android:name=".SettingsActivity" android:exported="false" android:label="设置" />
     <activity android:name=".CommonAppsActivity" android:exported="false" android:label="常用应用" />
+    <activity android:name=".ContactsActivity" android:exported="false" android:label="联系人" />
+    <activity android:name=".AddContactActivity" android:exported="false" android:label="添加联系人" />
+    <activity android:name=".ContactDetailActivity" android:exported="false" android:label="联系人详情" />
   </application>
 </manifest>

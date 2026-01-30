@@ -32,6 +32,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var commonAppsScrollView: android.widget.HorizontalScrollView
     private lateinit var commonAppsContainer: android.widget.LinearLayout
     private lateinit var textNoCommonApps: TextView
+    private lateinit var btnContacts: Button
 
     private var isLoggedIn = false
     private val PREFS_NAME = "OnePassPrefs"
@@ -82,6 +83,7 @@ class SettingsActivity : AppCompatActivity() {
         commonAppsScrollView = findViewById(R.id.commonAppsScrollView)
         commonAppsContainer = findViewById(R.id.commonAppsContainer)
         textNoCommonApps = findViewById(R.id.textNoCommonApps)
+        btnContacts = findViewById(R.id.btnContacts)
     }
 
     private fun loadSettings() {
@@ -138,6 +140,8 @@ class SettingsActivity : AppCompatActivity() {
         btnSetDefaultLauncher.setOnClickListener { setAsDefaultLauncher() }
 
         btnCommonApps.setOnClickListener { startActivity(Intent(this, CommonAppsActivity::class.java)) }
+
+        btnContacts.setOnClickListener { startActivity(Intent(this, ContactsActivity::class.java)) }
 
         switchWeather.setOnCheckedChangeListener { _, isChecked ->
             val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

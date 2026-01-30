@@ -24,6 +24,9 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.GridLayoutManager
 import com.example.onepass.api.WeatherApi
 import com.example.onepass.location.LocationManager
 import com.example.onepass.model.AmapWeatherResponse
@@ -90,6 +93,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var commonApp4: LinearLayout
     private lateinit var commonApp5: LinearLayout
     private lateinit var commonApp6: LinearLayout
+    
+    // 联系人相关
+    private val CONTACTS_PREFS = "contacts_prefs"
+    private val KEY_CONTACTS = "contacts"
+    private lateinit var contactsCard: CardView
+    private lateinit var recyclerViewContacts: RecyclerView
+    private lateinit var textNoContacts: TextView
+    private val contacts = mutableListOf<Contact>()
+    private lateinit var contactsAdapter: HomeContactAdapter
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -137,6 +149,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         updateDate()
         loadCommonApps()
+        loadContacts()
     }
 
     private fun initTextToSpeech() {
@@ -166,6 +179,21 @@ class MainActivity : AppCompatActivity() {
         commonApp4 = findViewById(R.id.commonApp4)
         commonApp5 = findViewById(R.id.commonApp5)
         commonApp6 = findViewById(R.id.commonApp6)
+
+        // 初始化联系人视图
+        contactsCard = findViewById(R.id.contactsCard)
+        recyclerViewContacts = findViewById(R.id.recyclerViewContacts)
+        textNoContacts = findViewById(R.id.textNoContacts)
+        
+        // 设置联系人RecyclerView为网格布局，每行2个
+        val gridLayoutManager = GridLayoutManager(this, 2)
+        recyclerViewContacts.layoutManager = gridLayoutManager
+        contactsAdapter = HomeContactAdapter(contacts, object : HomeContactAdapter.OnContactClickListener {
+            override fun onContactClick(contact: Contact) {
+                showContactActionDialog(contact)
+            }
+        })
+        recyclerViewContacts.adapter = contactsAdapter
 
         settingsIcon.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
@@ -493,7 +521,158 @@ class MainActivity : AppCompatActivity() {
         
         Log.d(TAG, "常用应用加载完成")
     }
-
+    
+    private fun loadContacts() {
+        Log.d(TAG, "开始加载联系人")
+        
+        // 从SharedPreferences加载联系人数据
+        val prefs = getSharedPreferences(CONTACTS_PREFS, Context.MODE_PRIVATE)
+        val contactsJson = prefs.getString(KEY_CONTACTS, null)
+        
+        if (contactsJson != null) {
+            try {
+                val gson = com.google.gson.Gson()
+                val contactArray = gson.fromJson(contactsJson, Array<Contact>::class.java)
+                contacts.clear()
+                contacts.addAll(contactArray)
+                Log.d(TAG, "成功加载 ${contacts.size} 个联系人")
+            } catch (e: Exception) {
+                Log.e(TAG, "解析联系人数据失败: ${e.message}", e)
+                contacts.clear()
+            }
+        } else {
+            Log.d(TAG, "没有找到联系人数据")
+            contacts.clear()
+        }
+        
+        // 更新UI
+        if (contacts.isEmpty()) {
+            contactsCard.visibility = View.GONE
+        } else {
+            contactsCard.visibility = View.VISIBLE
+            contactsAdapter.notifyDataSetChanged()
+        }
+    }
+    
+    private fun showContactActionDialog(contact: Contact) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_contact_actions, null)
+        
+        val contactName = dialogView.findViewById<TextView>(R.id.contactName)
+        val rowWechatVideo = dialogView.findViewById<LinearLayout>(R.id.rowWechatVideo)
+        val rowWechatVoice = dialogView.findViewById<LinearLayout>(R.id.rowWechatVoice)
+        val rowPhoneCall = dialogView.findViewById<LinearLayout>(R.id.rowPhoneCall)
+        
+        val btnWechatVideo = dialogView.findViewById<android.widget.Button>(R.id.btnWechatVideo)
+        val btnWechatVoice = dialogView.findViewById<android.widget.Button>(R.id.btnWechatVoice)
+        val btnPhoneCall = dialogView.findViewById<android.widget.Button>(R.id.btnPhoneCall)
+        
+        val btnPlayWechatVideo = dialogView.findViewById<android.widget.Button>(R.id.btnPlayWechatVideo)
+        val btnPlayWechatVoice = dialogView.findViewById<android.widget.Button>(R.id.btnPlayWechatVoice)
+        val btnPlayPhoneCall = dialogView.findViewById<android.widget.Button>(R.id.btnPlayPhoneCall)
+        
+        contactName.text = contact.wechatNote.ifEmpty { contact.name }
+        
+        // 根据联系人功能显示对应按钮
+        if (contact.hasWechatVideo) {
+            rowWechatVideo.visibility = View.VISIBLE
+            btnWechatVideo.setOnClickListener {
+                openWechatVideo(contact)
+                (it.parent as android.app.Dialog).dismiss()
+            }
+            btnPlayWechatVideo.setOnClickListener {
+                speakText("给${contact.wechatNote.ifEmpty { contact.name }}拨打微信视频")
+            }
+        }
+        
+        if (contact.hasWechatVoice) {
+            rowWechatVoice.visibility = View.VISIBLE
+            btnWechatVoice.setOnClickListener {
+                openWechatVoice(contact)
+                (it.parent as android.app.Dialog).dismiss()
+            }
+            btnPlayWechatVoice.setOnClickListener {
+                speakText("给${contact.wechatNote.ifEmpty { contact.name }}拨打微信语音")
+            }
+        }
+        
+        if (contact.hasPhoneCall) {
+            rowPhoneCall.visibility = View.VISIBLE
+            btnPhoneCall.setOnClickListener {
+                makePhoneCall(contact)
+                (it.parent as android.app.Dialog).dismiss()
+            }
+            btnPlayPhoneCall.setOnClickListener {
+                speakText("给${contact.wechatNote.ifEmpty { contact.name }}拨打电话")
+            }
+        }
+        
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setView(dialogView)
+        builder.setCancelable(true)
+        val dialog = builder.create()
+        dialog.show()
+    }
+    
+    private fun speakText(text: String) {
+        Log.d(TAG, "播报语音: $text")
+        if (isTextToSpeechInitialized) {
+            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        } else {
+            Toast.makeText(this, "语音播报未初始化", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun openWechatVideo(contact: Contact) {
+        Log.d(TAG, "发起微信视频通话: ${contact.wechatNote}")
+        try {
+            val intent = packageManager.getLaunchIntentForPackage("com.tencent.mm")
+            if (intent != null) {
+                intent.action = Intent.ACTION_VIEW
+                intent.data = android.net.Uri.parse("weixin://")
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "未安装微信", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "打开微信失败", e)
+            Toast.makeText(this, "打开微信失败", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun openWechatVoice(contact: Contact) {
+        Log.d(TAG, "发起微信语音通话: ${contact.wechatNote}")
+        try {
+            val intent = packageManager.getLaunchIntentForPackage("com.tencent.mm")
+            if (intent != null) {
+                intent.action = Intent.ACTION_VIEW
+                intent.data = android.net.Uri.parse("weixin://")
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "未安装微信", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "打开微信失败", e)
+            Toast.makeText(this, "打开微信失败", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun makePhoneCall(contact: Contact) {
+        if (contact.phoneNumber.isEmpty()) {
+            Toast.makeText(this, "手机号为空", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        Log.d(TAG, "拨打电话: ${contact.phoneNumber}")
+        try {
+            val intent = Intent(Intent.ACTION_DIAL)
+            intent.data = android.net.Uri.parse("tel:${contact.phoneNumber}")
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "拨打电话失败", e)
+            Toast.makeText(this, "拨打电话失败", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
     private fun clearCommonApps() {
         val commonAppViews = listOf(commonApp1, commonApp2, commonApp3, commonApp4, commonApp5, commonApp6)
         

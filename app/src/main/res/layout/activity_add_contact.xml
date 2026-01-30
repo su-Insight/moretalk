@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- 顶部返回按钮 -->
+        <ImageView
+            android:id="@+id/backButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:padding="12dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- 页面标题 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="添加联系人"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginStart="16dp"
+            app:layout_constraintStart_toEndOf="@id/backButton"
+            app:layout_constraintTop_toTopOf="@id/backButton"
+            app:layout_constraintBottom_toBottomOf="@id/backButton" />
+
+        <!-- 联系人图片 -->
+        <ImageView
+            android:id="@+id/contactImage"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:scaleType="centerCrop"
+            android:background="@android:color/darker_gray"
+            android:layout_marginTop="24dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/backButton" />
+
+        <!-- 微信备注输入 -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/wechatNoteLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/contactImage">
+
+            <TextView
+                android:id="@+id/textWechatNote"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="微信备注"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <EditText
+                android:id="@+id/editWechatNote"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:hint="请输入微信备注"
+                android:background="@android:drawable/edit_text"
+                android:layout_marginTop="8dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/textWechatNote" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- 手机号输入 -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/phoneNumberLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/wechatNoteLayout">
+
+            <TextView
+                android:id="@+id/textPhoneNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="手机号"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <EditText
+                android:id="@+id/editPhoneNumber"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:hint="请输入手机号"
+                android:inputType="phone"
+                android:background="@android:drawable/edit_text"
+                android:layout_marginTop="8dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/textPhoneNumber" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- 通讯选项 -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/communicationLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/phoneNumberLayout">
+
+            <TextView
+                android:id="@+id/textCommunication"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="通讯选项"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <CheckBox
+                android:id="@+id/checkWechatVideo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="微信视频"
+                android:textSize="14sp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/textCommunication" />
+
+            <CheckBox
+                android:id="@+id/checkWechatVoice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="微信语音"
+                android:textSize="14sp"
+                android:layout_marginTop="12dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/checkWechatVideo" />
+
+            <CheckBox
+                android:id="@+id/checkPhoneCall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="拨打电话"
+                android:textSize="14sp"
+                android:layout_marginTop="12dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/checkWechatVoice" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- 保存按钮 -->
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:text="保存"
+            android:textColor="#ffffff"
+            android:background="@android:color/holo_green_dark"
+            android:layout_marginTop="32dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/communicationLayout" />
+
+        <!-- 删除按钮 -->
+        <Button
+            android:id="@+id/btnDelete"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:text="删除"
+            android:textColor="#ffffff"
+            android:background="@android:color/holo_red_dark"
+            android:layout_marginTop="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btnSave" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
