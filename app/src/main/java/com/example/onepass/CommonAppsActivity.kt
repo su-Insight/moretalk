@@ -83,6 +83,18 @@ class CommonAppsActivity : AppCompatActivity() {
                     val appName = applicationInfo.loadLabel(packageManager).toString()
                     val icon = applicationInfo.loadIcon(packageManager)
                     
+                    // 检查是否为默认图标
+                    if (hasDefaultIcon(packageName, packageManager)) {
+                        Log.d(TAG, "  -> 跳过默认图标应用: $appName")
+                        continue
+                    }
+                    
+                    // 检查应用名是否为 XX.XX.XX 格式
+                    if (isPackageNameFormatApp(appName)) {
+                        Log.d(TAG, "  -> 跳过包名格式应用: $appName")
+                        continue
+                    }
+                    
                     val appInfo = AppInfo(appName, packageName, icon, false)
                     apps.add(appInfo)
                     
@@ -255,6 +267,22 @@ class CommonAppsActivity : AppCompatActivity() {
         } catch (e: Exception) {
             false
         }
+    }
+
+    private fun hasDefaultIcon(packageName: String, packageManager: PackageManager): Boolean {
+        return try {
+            val packageInfo = packageManager.getPackageInfo(packageName, 0)
+            // 检查应用的icon资源是否为0，如果是0则表示使用默认图标
+            packageInfo.applicationInfo?.icon == 0
+        } catch (e: Exception) {
+            // 如果获取包信息失败，默认认为不是默认图标
+            false
+        }
+    }
+
+    private fun isPackageNameFormatApp(appName: String): Boolean {
+        // 检查应用名是否符合 XX.XX.XX 格式（包含至少两个点）
+        return appName.count { it == '.' } >= 2
     }
 
     inner class AppAdapter(private val items: List<AppInfo>) : RecyclerView.Adapter<AppAdapter.ViewHolder>() {
