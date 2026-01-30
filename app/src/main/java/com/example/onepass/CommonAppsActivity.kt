@@ -70,7 +70,7 @@ class CommonAppsActivity : AppCompatActivity() {
             Log.d(TAG, "扫描到应用总数: ${applicationInfos.size}")
             
             for (i in applicationInfos.indices) {
-                if (i < 10) {
+                if (i < 50) {
                     val packageName = applicationInfos[i].packageName
                     Log.d(TAG, "应用 $i: $packageName")
                     
