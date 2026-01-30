@@ -4,7 +4,9 @@ import android.Manifest
 import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -12,6 +14,7 @@ import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.View
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -75,6 +78,17 @@ class MainActivity : AppCompatActivity() {
     private val VALUE_SOLAR = "solar"
     private var lastWeatherInfo = ""
     private var lunarDateText = ""
+    
+    // 常用应用相关
+    private val COMMON_APPS_PREFS = "common_apps_prefs"
+    private val KEY_COMMON_APPS = "common_apps"
+    private val KEY_APP_ORDERS = "app_orders"
+    private lateinit var commonApp1: LinearLayout
+    private lateinit var commonApp2: LinearLayout
+    private lateinit var commonApp3: LinearLayout
+    private lateinit var commonApp4: LinearLayout
+    private lateinit var commonApp5: LinearLayout
+    private lateinit var commonApp6: LinearLayout
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -121,6 +135,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateDate()
+        loadCommonApps()
     }
 
     private fun initTextToSpeech() {
@@ -141,6 +156,14 @@ class MainActivity : AppCompatActivity() {
         locationText = weatherComponent.findViewById(R.id.locationText)
         settingsIcon = weatherComponent.findViewById(R.id.settingsIcon)
         weatherCard = weatherComponent as CardView
+
+        // 初始化常用应用视图
+        commonApp1 = findViewById(R.id.commonApp1)
+        commonApp2 = findViewById(R.id.commonApp2)
+        commonApp3 = findViewById(R.id.commonApp3)
+        commonApp4 = findViewById(R.id.commonApp4)
+        commonApp5 = findViewById(R.id.commonApp5)
+        commonApp6 = findViewById(R.id.commonApp6)
 
         settingsIcon.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
@@ -366,5 +389,144 @@ class MainActivity : AppCompatActivity() {
         weatherText.text = "获取失败"
         temperatureText.text = "--"
         weatherDetailText.text = "请检查网络连接"
+    }
+
+    private fun loadCommonApps() {
+        Log.d(TAG, "开始加载常用应用")
+        
+        // 从 SharedPreferences 加载已保存的应用列表
+        val savedApps = getSharedPreferences(COMMON_APPS_PREFS, Context.MODE_PRIVATE)
+            .getStringSet(KEY_COMMON_APPS, HashSet<String>()) ?: HashSet()
+        
+        // 从 SharedPreferences 加载应用排序信息
+        val savedOrders = getSharedPreferences(COMMON_APPS_PREFS, Context.MODE_PRIVATE)
+            .getString(KEY_APP_ORDERS, null)
+        val appOrders = if (savedOrders != null) {
+            try {
+                parseAppOrders(savedOrders)
+            } catch (e: Exception) {
+                emptyMap()
+            }
+        } else {
+            emptyMap()
+        }
+        
+        // 清空所有常用应用视图
+        clearCommonApps()
+        
+        if (savedApps.isEmpty()) {
+            Log.d(TAG, "没有保存的常用应用")
+            return
+        }
+        
+        // 按排序值对应用进行排序
+        val sortedApps = savedApps.sortedWith(Comparator {
+                app1, app2 ->
+            val order1 = appOrders[app1] ?: Int.MAX_VALUE
+            val order2 = appOrders[app2] ?: Int.MAX_VALUE
+            order1.compareTo(order2)
+        })
+        
+        Log.d(TAG, "常用应用排序完成: ${sortedApps.size} 个应用")
+        
+        // 为每个应用创建视图
+        val commonAppViews = listOf(commonApp1, commonApp2, commonApp3, commonApp4, commonApp5, commonApp6)
+        
+        for (i in sortedApps.indices) {
+            if (i >= commonAppViews.size) {
+                break
+            }
+            
+            val packageName = sortedApps[i]
+            val appView = commonAppViews[i]
+            
+            try {
+                val packageInfo = packageManager.getPackageInfo(packageName, 0)
+                val appName = packageInfo.applicationInfo?.loadLabel(packageManager)?.toString() ?: packageName
+                val appIcon = packageInfo.applicationInfo?.loadIcon(packageManager)
+                
+                if (appIcon == null) {
+                    Log.e(TAG, "无法加载应用图标: $packageName")
+                    appView.visibility = View.GONE
+                    continue
+                }
+                
+                Log.d(TAG, "加载应用: $appName ($packageName)")
+                
+                // 创建应用图标
+                val iconView = ImageView(this)
+                iconView.setImageDrawable(appIcon)
+                iconView.layoutParams = LinearLayout.LayoutParams(48, 48)
+                iconView.setPadding(0, 0, 0, 8)
+                
+                // 创建应用名称
+                val nameView = TextView(this)
+                nameView.text = appName
+                nameView.setTextColor(resources.getColor(android.R.color.black, null))
+                nameView.textSize = 12f
+                nameView.textAlignment = TextView.TEXT_ALIGNMENT_CENTER
+                nameView.maxLines = 1
+                nameView.ellipsize = android.text.TextUtils.TruncateAt.END
+                
+                // 添加到布局
+                appView.removeAllViews()
+                appView.addView(iconView)
+                appView.addView(nameView)
+                
+                // 添加点击事件
+                appView.setOnClickListener {
+                    launchApp(packageName)
+                }
+                
+                appView.visibility = View.VISIBLE
+            } catch (e: Exception) {
+                Log.e(TAG, "加载应用失败: $packageName", e)
+                appView.visibility = View.GONE
+            }
+        }
+        
+        Log.d(TAG, "常用应用加载完成")
+    }
+
+    private fun clearCommonApps() {
+        val commonAppViews = listOf(commonApp1, commonApp2, commonApp3, commonApp4, commonApp5, commonApp6)
+        
+        for (appView in commonAppViews) {
+            appView.removeAllViews()
+            appView.visibility = View.GONE
+        }
+    }
+
+    private fun launchApp(packageName: String) {
+        Log.d(TAG, "启动应用: $packageName")
+        
+        try {
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
+            if (launchIntent != null) {
+                startActivity(launchIntent)
+            } else {
+                Log.e(TAG, "无法启动应用: $packageName")
+                Toast.makeText(this, "无法启动应用", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "启动应用失败: $packageName", e)
+            Toast.makeText(this, "启动应用失败", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun parseAppOrders(ordersString: String): Map<String, Int> {
+        val orders = mutableMapOf<String, Int>()
+        val pairs = ordersString.split(",")
+        for (pair in pairs) {
+            val parts = pair.split(":")
+            if (parts.size == 2) {
+                try {
+                    orders[parts[0]] = parts[1].toInt()
+                } catch (e: Exception) {
+                    // 忽略解析错误
+                }
+            }
+        }
+        return orders
     }
 }
