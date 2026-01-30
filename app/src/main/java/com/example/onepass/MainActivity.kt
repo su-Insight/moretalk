@@ -83,6 +83,7 @@ class MainActivity : AppCompatActivity() {
     private val COMMON_APPS_PREFS = "common_apps_prefs"
     private val KEY_COMMON_APPS = "common_apps"
     private val KEY_APP_ORDERS = "app_orders"
+    private lateinit var commonAppsCard: CardView
     private lateinit var commonApp1: LinearLayout
     private lateinit var commonApp2: LinearLayout
     private lateinit var commonApp3: LinearLayout
@@ -158,6 +159,7 @@ class MainActivity : AppCompatActivity() {
         weatherCard = weatherComponent as CardView
 
         // 初始化常用应用视图
+        commonAppsCard = findViewById(R.id.commonAppsCard)
         commonApp1 = findViewById(R.id.commonApp1)
         commonApp2 = findViewById(R.id.commonApp2)
         commonApp3 = findViewById(R.id.commonApp3)
@@ -415,9 +417,13 @@ class MainActivity : AppCompatActivity() {
         clearCommonApps()
         
         if (savedApps.isEmpty()) {
-            Log.d(TAG, "没有保存的常用应用")
+            Log.d(TAG, "没有保存的常用应用，隐藏常用应用卡片")
+            commonAppsCard.visibility = View.GONE
             return
         }
+        
+        // 显示常用应用卡片
+        commonAppsCard.visibility = View.VISIBLE
         
         // 按排序值对应用进行排序
         val sortedApps = savedApps.sortedWith(Comparator {
@@ -453,17 +459,17 @@ class MainActivity : AppCompatActivity() {
                 
                 Log.d(TAG, "加载应用: $appName ($packageName)")
                 
-                // 创建应用图标
+                // 创建应用图标（增大尺寸）
                 val iconView = ImageView(this)
                 iconView.setImageDrawable(appIcon)
-                iconView.layoutParams = LinearLayout.LayoutParams(48, 48)
+                iconView.layoutParams = LinearLayout.LayoutParams(64, 64)
                 iconView.setPadding(0, 0, 0, 8)
                 
-                // 创建应用名称
+                // 创建应用名称（增大字体）
                 val nameView = TextView(this)
                 nameView.text = appName
                 nameView.setTextColor(resources.getColor(android.R.color.black, null))
-                nameView.textSize = 12f
+                nameView.textSize = 14f
                 nameView.textAlignment = TextView.TEXT_ALIGNMENT_CENTER
                 nameView.maxLines = 1
                 nameView.ellipsize = android.text.TextUtils.TruncateAt.END
