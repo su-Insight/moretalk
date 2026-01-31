@@ -39,6 +39,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
+import kotlin.math.max
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -886,6 +887,18 @@ class MainActivity : AppCompatActivity() {
         } else {
             Log.d(TAG, "没有找到联系人数据")
             contacts.clear()
+        }
+        
+        // 根据宽度动态计算列数
+        recyclerViewContacts.post {
+            val recyclerViewWidth = recyclerViewContacts.width
+            val originalImageSize = 400 // 与HomeContactAdapter中的原始大小保持一致
+            val scaledImageSize = GlobalScaleManager.getScaledValue(this, originalImageSize)
+            val contactItemWidth = scaledImageSize + 32 // 联系人项宽度 = 头像宽度 + 左右边距
+            val spanCount = maxOf(1, recyclerViewWidth / contactItemWidth)
+            val gridLayoutManager = GridLayoutManager(this, spanCount)
+            recyclerViewContacts.layoutManager = gridLayoutManager
+            contactsAdapter.notifyDataSetChanged()
         }
         
         // 更新UI
