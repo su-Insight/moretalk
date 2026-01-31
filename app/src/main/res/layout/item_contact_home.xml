@@ -16,25 +16,14 @@
         android:contentDescription="联系人头像" />
 
     <TextView
-        android:id="@+id/contactWechatNote"
+        android:id="@+id/contactName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="微信备注"
+        android:text="姓名"
         android:textSize="18sp"
         android:textColor="#333333"
         android:textStyle="bold"
         android:layout_marginTop="16dp"
-        android:maxLines="1"
-        android:ellipsize="end" />
-
-    <TextView
-        android:id="@+id/contactPhoneNumber"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="手机号"
-        android:textSize="16sp"
-        android:textColor="#666666"
-        android:layout_marginTop="8dp"
         android:maxLines="1"
         android:ellipsize="end" />
 

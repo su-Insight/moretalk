@@ -44,11 +44,15 @@ class ContactAdapter(private val contacts: List<Contact>, private val listener: 
         }
         
         // 设置联系人名称
-        holder.contactName.text = contact.wechatNote.ifEmpty { contact.name }
+        holder.contactName.text = contact.name
         
         // 设置联系人信息
         val infoBuilder = StringBuilder()
+        if (contact.wechatNote.isNotEmpty()) {
+            infoBuilder.append("微信备注: ${contact.wechatNote}")
+        }
         if (contact.phoneNumber.isNotEmpty()) {
+            if (infoBuilder.isNotEmpty()) infoBuilder.append(" | ")
             infoBuilder.append("手机号: ${contact.phoneNumber}")
         }
         

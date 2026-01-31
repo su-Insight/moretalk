@@ -15,8 +15,7 @@ class HomeContactAdapter(private val contacts: List<Contact>, private val listen
 
     class ContactViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val contactImage: ImageView = itemView.findViewById(R.id.contactImage)
-        val contactWechatNote: TextView = itemView.findViewById(R.id.contactWechatNote)
-        val contactPhoneNumber: TextView = itemView.findViewById(R.id.contactPhoneNumber)
+        val contactName: TextView = itemView.findViewById(R.id.contactName)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ContactViewHolder {
@@ -27,14 +26,7 @@ class HomeContactAdapter(private val contacts: List<Contact>, private val listen
     override fun onBindViewHolder(holder: ContactViewHolder, position: Int) {
         val contact = contacts[position]
         
-        holder.contactWechatNote.text = contact.wechatNote
-        
-        if (contact.phoneNumber.isNotEmpty()) {
-            holder.contactPhoneNumber.text = contact.phoneNumber
-            holder.contactPhoneNumber.visibility = View.VISIBLE
-        } else {
-            holder.contactPhoneNumber.visibility = View.GONE
-        }
+        holder.contactName.text = contact.name
         
         if (!contact.imagePath.isNullOrEmpty()) {
             android.util.Log.d("HomeContactAdapter", "加载图片: ${contact.imagePath}")

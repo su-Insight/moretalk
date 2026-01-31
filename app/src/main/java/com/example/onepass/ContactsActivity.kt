@@ -191,7 +191,7 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
         
         // 创建搜索输入框
         val input = android.widget.EditText(this)
-        input.hint = "请输入微信备注或手机号"
+        input.hint = "请输入姓名、微信备注或手机号"
         builder.setView(input)
         
         // 设置搜索按钮
@@ -233,6 +233,7 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
         
         // 搜索联系人
         val searchResults = allContacts.filter {
+            it.name.contains(keyword, ignoreCase = true) ||
             it.wechatNote.contains(keyword, ignoreCase = true) ||
             it.phoneNumber.contains(keyword, ignoreCase = true)
         }

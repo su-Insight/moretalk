@@ -82,6 +82,7 @@ class MainActivity : AppCompatActivity() {
     private val KEY_DATE_STYLE = "date_style"
     private val VALUE_LUNAR = "lunar"
     private val VALUE_SOLAR = "solar"
+    private val KEY_ICON_SIZE = "icon_size"
     private var lastWeatherInfo = ""
     private var lunarDateText = ""
     
@@ -673,6 +674,10 @@ class MainActivity : AppCompatActivity() {
     private fun loadCommonApps() {
         Log.d(TAG, "开始加载常用应用")
         
+        // 从 SharedPreferences 加载图标大小设置
+        val iconSize = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_ICON_SIZE, 160)
+        val textSize = (iconSize / 10).toFloat()
+        
         // 从 SharedPreferences 加载已保存的应用列表
         val savedApps = getSharedPreferences(COMMON_APPS_PREFS, Context.MODE_PRIVATE)
             .getStringSet(KEY_COMMON_APPS, HashSet<String>()) ?: HashSet()
@@ -696,11 +701,17 @@ class MainActivity : AppCompatActivity() {
         if (savedApps.isEmpty()) {
             Log.d(TAG, "没有保存的常用应用，隐藏常用应用卡片")
             commonAppsCard.visibility = View.GONE
+            val layoutParams = contactsCard.layoutParams as LinearLayout.LayoutParams
+            layoutParams.topMargin = (16 * resources.displayMetrics.density).toInt()
+            contactsCard.layoutParams = layoutParams
             return
         }
         
         // 显示常用应用卡片
         commonAppsCard.visibility = View.VISIBLE
+        val layoutParams = contactsCard.layoutParams as LinearLayout.LayoutParams
+        layoutParams.topMargin = 0
+        contactsCard.layoutParams = layoutParams
         
         // 按排序值对应用进行排序
         val sortedApps = savedApps.sortedWith(Comparator {
@@ -739,14 +750,14 @@ class MainActivity : AppCompatActivity() {
                 // 创建应用图标（增大尺寸）
                 val iconView = ImageView(this)
                 iconView.setImageDrawable(appIcon)
-                iconView.layoutParams = LinearLayout.LayoutParams(100, 100)
+                iconView.layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
                 iconView.setPadding(0, 0, 0, 8)
                 
                 // 创建应用名称
                 val nameView = TextView(this)
                 nameView.text = appName
                 nameView.setTextColor(resources.getColor(android.R.color.black, null))
-                nameView.textSize = 14f
+                nameView.textSize = textSize
                 nameView.textAlignment = TextView.TEXT_ALIGNMENT_CENTER
                 nameView.maxLines = 1
                 nameView.ellipsize = android.text.TextUtils.TruncateAt.END
@@ -819,7 +830,7 @@ class MainActivity : AppCompatActivity() {
         val btnPlayWechatVoice = dialogView.findViewById<android.widget.Button>(R.id.btnPlayWechatVoice)
         val btnPlayPhoneCall = dialogView.findViewById<android.widget.Button>(R.id.btnPlayPhoneCall)
         
-        contactName.text = contact.wechatNote.ifEmpty { contact.name }
+        contactName.text = contact.name
         
         val builder = android.app.AlertDialog.Builder(this)
         builder.setView(dialogView)
@@ -834,7 +845,7 @@ class MainActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             btnPlayWechatVideo.setOnClickListener {
-                speakText("给${contact.wechatNote.ifEmpty { contact.name }}拨打微信视频")
+                speakText("给${contact.name}拨打微信视频")
             }
         }
         
@@ -845,7 +856,7 @@ class MainActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             btnPlayWechatVoice.setOnClickListener {
-                speakText("给${contact.wechatNote.ifEmpty { contact.name }}拨打微信语音")
+                speakText("给${contact.name}拨打微信语音")
             }
         }
         
@@ -856,7 +867,7 @@ class MainActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             btnPlayPhoneCall.setOnClickListener {
-                speakText("给${contact.wechatNote.ifEmpty { contact.name }}拨打电话")
+                speakText("给${contact.name}拨打电话")
             }
         }
         

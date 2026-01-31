@@ -84,6 +84,7 @@ class AddContactActivity : AppCompatActivity() {
         // 从Intent获取联系人信息
         contactId = intent.getIntExtra("contact_id", -1)
         if (contactId != -1) {
+            val name = intent.getStringExtra("contact_name")
             val wechatNote = intent.getStringExtra("contact_wechat")
             val phoneNumber = intent.getStringExtra("contact_phone")
             val imagePath = intent.getStringExtra("contact_image")
@@ -91,10 +92,11 @@ class AddContactActivity : AppCompatActivity() {
             val hasWechatVoice = intent.getBooleanExtra("contact_voice", false)
             val hasPhoneCall = intent.getBooleanExtra("contact_call", false)
             
-            Log.d(TAG, "加载联系人信息成功: wechatNote=$wechatNote, phoneNumber=$phoneNumber, imagePath=$imagePath")
+            Log.d(TAG, "加载联系人信息成功: name=$name, wechatNote=$wechatNote, phoneNumber=$phoneNumber, imagePath=$imagePath")
             Log.d(TAG, "选项: 微信视频=$hasWechatVideo, 微信语音=$hasWechatVoice, 拨打电话=$hasPhoneCall")
             
             // 填充联系人信息到输入字段
+            findViewById<android.widget.EditText>(R.id.editName).setText(name)
             findViewById<android.widget.EditText>(R.id.editWechatNote).setText(wechatNote)
             findViewById<android.widget.EditText>(R.id.editPhoneNumber).setText(phoneNumber)
             findViewById<android.widget.CheckBox>(R.id.checkWechatVideo).isChecked = hasWechatVideo
@@ -281,6 +283,7 @@ class AddContactActivity : AppCompatActivity() {
     
     private fun saveContact() {
         // 获取输入内容
+        val name = findViewById<android.widget.EditText>(R.id.editName).text.toString()
         val wechatNote = findViewById<android.widget.EditText>(R.id.editWechatNote).text.toString()
         val phoneNumber = findViewById<android.widget.EditText>(R.id.editPhoneNumber).text.toString()
         
@@ -290,6 +293,11 @@ class AddContactActivity : AppCompatActivity() {
         val checkPhoneCall = findViewById<android.widget.CheckBox>(R.id.checkPhoneCall).isChecked
         
         // 验证逻辑
+        if (name.isEmpty()) {
+            Toast.makeText(this, "姓名不能为空", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         if ((checkWechatVideo || checkWechatVoice) && wechatNote.isEmpty()) {
             Toast.makeText(this, "微信备注不能为空", Toast.LENGTH_SHORT).show()
             return
@@ -315,7 +323,7 @@ class AddContactActivity : AppCompatActivity() {
         // 创建联系人对象
         val contact = Contact(
             id = finalContactId!!,
-            name = wechatNote.ifEmpty { phoneNumber },
+            name = name,
             phoneNumber = phoneNumber,
             wechatNote = wechatNote,
             hasWechatVideo = checkWechatVideo,
@@ -324,7 +332,7 @@ class AddContactActivity : AppCompatActivity() {
             imagePath = currentPhotoPath
         )
         
-        Log.d(TAG, "保存联系人: 微信备注=$wechatNote, 手机号=$phoneNumber, 图片路径=$currentPhotoPath")
+        Log.d(TAG, "保存联系人: 姓名=$name, 微信备注=$wechatNote, 手机号=$phoneNumber, 图片路径=$currentPhotoPath")
         Log.d(TAG, "选项: 微信视频=$checkWechatVideo, 微信语音=$checkWechatVoice, 拨打电话=$checkPhoneCall")
         
         // 直接保存联系人到SharedPreferences

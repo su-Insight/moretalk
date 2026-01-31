@@ -44,15 +44,48 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/backButton" />
 
-        <!-- 微信备注输入 -->
+        <!-- 姓名输入 -->
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/wechatNoteLayout"
+            android:id="@+id/nameLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/contactImage">
+
+            <TextView
+                android:id="@+id/textName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="姓名"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <EditText
+                android:id="@+id/editName"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:hint="请输入姓名"
+                android:background="@android:drawable/edit_text"
+                android:layout_marginTop="8dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/textName" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- 微信备注输入 -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/wechatNoteLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/nameLayout">
 
             <TextView
                 android:id="@+id/textWechatNote"
