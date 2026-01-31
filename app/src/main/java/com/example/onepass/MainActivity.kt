@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.location.LocationManager as AndroidLocationManager
 import android.provider.Settings
 import android.graphics.drawable.Drawable
+import android.graphics.Rect
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -16,6 +17,8 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import android.view.View
+import android.view.LayoutInflater
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -95,12 +98,9 @@ class MainActivity : AppCompatActivity() {
     private val KEY_APP_ORDERS = "app_orders"
     private lateinit var commonAppsCard: CardView
     private lateinit var commonAppTitle: TextView
-    private lateinit var commonApp1: LinearLayout
-    private lateinit var commonApp2: LinearLayout
-    private lateinit var commonApp3: LinearLayout
-    private lateinit var commonApp4: LinearLayout
-    private lateinit var commonApp5: LinearLayout
-    private lateinit var commonApp6: LinearLayout
+    private lateinit var recyclerViewCommonApps: RecyclerView
+    private val commonApps = mutableListOf<CommonApp>()
+    private lateinit var commonAppsAdapter: CommonAppAdapter
     
     // 联系人相关
     private val CONTACTS_PREFS = "contacts_prefs"
@@ -373,12 +373,23 @@ class MainActivity : AppCompatActivity() {
         // 初始化常用应用视图
         commonAppsCard = findViewById(R.id.commonAppsCard)
         commonAppTitle = commonAppsCard.findViewById(R.id.commonAppTitle)
-        commonApp1 = findViewById(R.id.commonApp1)
-        commonApp2 = findViewById(R.id.commonApp2)
-        commonApp3 = findViewById(R.id.commonApp3)
-        commonApp4 = findViewById(R.id.commonApp4)
-        commonApp5 = findViewById(R.id.commonApp5)
-        commonApp6 = findViewById(R.id.commonApp6)
+        recyclerViewCommonApps = findViewById(R.id.recyclerViewCommonApps)
+        
+        // 设置常用应用RecyclerView
+        commonAppsAdapter = CommonAppAdapter(commonApps) {
+            packageName ->
+            launchApp(packageName)
+        }
+        recyclerViewCommonApps.adapter = commonAppsAdapter
+        
+        // 添加ItemDecoration来增加图标之间的间距
+        recyclerViewCommonApps.addItemDecoration(object : RecyclerView.ItemDecoration() {
+            override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
+                super.getItemOffsets(outRect, view, parent, state)
+                outRect.right = 16 // 右侧间距
+                outRect.bottom = 16 // 底部间距
+            }
+        })
 
         // 初始化联系人视图
         contactsCard = findViewById(R.id.contactsCard)
@@ -743,129 +754,6 @@ class MainActivity : AppCompatActivity() {
         weatherDetailText.text = "请检查网络连接"
     }
 
-    private fun loadCommonApps() {
-        Log.d(TAG, "开始加载常用应用")
-        
-        // 从 SharedPreferences 加载图标大小设置
-        val iconSizeValue = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_ICON_SIZE, 80)
-        // 将 0-100 的值映射到 100-240dp 的范围（增大图标大小），然后在缩小30%的基础上再缩小10%
-        val baseIconSize = 100 + (iconSizeValue * 140 / 100) // 增加100%
-        val originalIconSize = (baseIconSize * 0.7 * 0.9).toInt() // 缩小30%后再缩小10%
-        // 使用GlobalScaleManager进行缩放
-        val iconSize = GlobalScaleManager.getScaledValue(this, originalIconSize)
-        val originalTextSize = (originalIconSize / 10).toFloat()
-        val textSize = GlobalScaleManager.getScaledValue(this, originalTextSize)
-        
-        // 控制标题大小
-        val originalTitleSize = 23f // 原始大小23sp
-        val scaledTitleSize = GlobalScaleManager.getScaledValue(this, originalTitleSize)
-        commonAppTitle.textSize = scaledTitleSize
-        contactTitle.textSize = scaledTitleSize
-        
-        // 从 SharedPreferences 加载已保存的应用列表
-        val savedApps = getSharedPreferences(COMMON_APPS_PREFS, Context.MODE_PRIVATE)
-            .getStringSet(KEY_COMMON_APPS, HashSet<String>()) ?: HashSet()
-        
-        // 从 SharedPreferences 加载应用排序信息
-        val savedOrders = getSharedPreferences(COMMON_APPS_PREFS, Context.MODE_PRIVATE)
-            .getString(KEY_APP_ORDERS, null)
-        val appOrders = if (savedOrders != null) {
-            try {
-                parseAppOrders(savedOrders)
-            } catch (e: Exception) {
-                emptyMap()
-            }
-        } else {
-            emptyMap()
-        }
-        
-        // 清空所有常用应用视图
-        clearCommonApps()
-        
-        if (savedApps.isEmpty()) {
-            Log.d(TAG, "没有保存的常用应用，隐藏常用应用卡片")
-            commonAppsCard.visibility = View.GONE
-            val layoutParams = contactsCard.layoutParams as LinearLayout.LayoutParams
-            layoutParams.topMargin = (16 * resources.displayMetrics.density).toInt()
-            contactsCard.layoutParams = layoutParams
-            return
-        }
-        
-        // 显示常用应用卡片
-        commonAppsCard.visibility = View.VISIBLE
-        val layoutParams = contactsCard.layoutParams as LinearLayout.LayoutParams
-        layoutParams.topMargin = 0
-        contactsCard.layoutParams = layoutParams
-        
-        // 按排序值对应用进行排序
-        val sortedApps = savedApps.sortedWith(Comparator {
-                app1, app2 ->
-            val order1 = appOrders[app1] ?: Int.MAX_VALUE
-            val order2 = appOrders[app2] ?: Int.MAX_VALUE
-            order1.compareTo(order2)
-        })
-        
-        Log.d(TAG, "常用应用排序完成: ${sortedApps.size} 个应用")
-        
-        // 为每个应用创建视图
-        val commonAppViews = listOf(commonApp1, commonApp2, commonApp3, commonApp4, commonApp5, commonApp6)
-        
-        for (i in sortedApps.indices) {
-            if (i >= commonAppViews.size) {
-                break
-            }
-            
-            val packageName = sortedApps[i]
-            val appView = commonAppViews[i]
-            
-            try {
-                val packageInfo = packageManager.getPackageInfo(packageName, 0)
-                val appName = packageInfo.applicationInfo?.loadLabel(packageManager)?.toString() ?: packageName
-                val appIcon = packageInfo.applicationInfo?.loadIcon(packageManager)
-                
-                if (appIcon == null) {
-                    Log.e(TAG, "无法加载应用图标: $packageName")
-                    appView.visibility = View.GONE
-                    continue
-                }
-                
-                Log.d(TAG, "加载应用: $appName ($packageName)")
-                
-                // 创建应用图标（增大尺寸）
-                val iconView = ImageView(this)
-                iconView.setImageDrawable(appIcon)
-                iconView.layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
-                iconView.setPadding(0, 0, 0, 8)
-                
-                // 创建应用名称
-                val nameView = TextView(this)
-                nameView.text = appName
-                nameView.setTextColor(resources.getColor(android.R.color.black, null))
-                nameView.textSize = textSize
-                nameView.textAlignment = TextView.TEXT_ALIGNMENT_CENTER
-                nameView.maxLines = 1
-                nameView.ellipsize = android.text.TextUtils.TruncateAt.END
-                
-                // 添加到布局
-                appView.removeAllViews()
-                appView.addView(iconView)
-                appView.addView(nameView)
-                
-                // 添加点击事件
-                appView.setOnClickListener {
-                    launchApp(packageName)
-                }
-                
-                appView.visibility = View.VISIBLE
-            } catch (e: Exception) {
-                Log.e(TAG, "加载应用失败: $packageName", e)
-                appView.visibility = View.GONE
-            }
-        }
-        
-        Log.d(TAG, "常用应用加载完成")
-    }
-    
     private fun loadContacts() {
         Log.d(TAG, "开始加载联系人")
         
@@ -1104,15 +992,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun clearCommonApps() {
-        val commonAppViews = listOf(commonApp1, commonApp2, commonApp3, commonApp4, commonApp5, commonApp6)
-        
-        for (appView in commonAppViews) {
-            appView.removeAllViews()
-            appView.visibility = View.GONE
-        }
-    }
-
     private fun launchApp(packageName: String) {
         Log.d(TAG, "启动应用: $packageName")
         
@@ -1144,5 +1023,148 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return orders
+    }
+
+    private fun loadCommonApps() {
+        Log.d(TAG, "开始加载常用应用")
+        
+        // 从 SharedPreferences 加载图标大小设置
+        val iconSizeValue = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_ICON_SIZE, 80)
+        // 将 0-100 的值映射到 100-240dp 的范围（增大图标大小），然后在缩小30%的基础上再缩小10%
+        val baseIconSize = 100 + (iconSizeValue * 140 / 100) // 增加100%
+        val originalIconSize = (baseIconSize * 0.7 * 0.9).toInt() // 缩小30%后再缩小10%
+        // 使用GlobalScaleManager进行缩放
+        val iconSize = GlobalScaleManager.getScaledValue(this, originalIconSize)
+        val originalTextSize = (originalIconSize / 10).toFloat()
+        val textSize = GlobalScaleManager.getScaledValue(this, originalTextSize)
+        
+        // 控制标题大小
+        val originalTitleSize = 23f // 原始大小23sp
+        val scaledTitleSize = GlobalScaleManager.getScaledValue(this, originalTitleSize)
+        commonAppTitle.textSize = scaledTitleSize
+        contactTitle.textSize = scaledTitleSize
+        
+        // 从 SharedPreferences 加载已保存的应用列表
+        val savedApps = getSharedPreferences(COMMON_APPS_PREFS, Context.MODE_PRIVATE)
+            .getStringSet(KEY_COMMON_APPS, HashSet<String>()) ?: HashSet()
+        
+        // 从 SharedPreferences 加载应用排序信息
+        val savedOrders = getSharedPreferences(COMMON_APPS_PREFS, Context.MODE_PRIVATE)
+            .getString(KEY_APP_ORDERS, null)
+        val appOrders = if (savedOrders != null) {
+            try {
+                parseAppOrders(savedOrders)
+            } catch (e: Exception) {
+                emptyMap()
+            }
+        } else {
+            emptyMap()
+        }
+        
+        // 清空常用应用列表
+        commonApps.clear()
+        
+        if (savedApps.isEmpty()) {
+            Log.d(TAG, "没有保存的常用应用，隐藏常用应用卡片")
+            commonAppsCard.visibility = View.GONE
+            val layoutParams = contactsCard.layoutParams as LinearLayout.LayoutParams
+            layoutParams.topMargin = (16 * resources.displayMetrics.density).toInt()
+            contactsCard.layoutParams = layoutParams
+            commonAppsAdapter.notifyDataSetChanged()
+            return
+        }
+        
+        // 显示常用应用卡片
+        commonAppsCard.visibility = View.VISIBLE
+        val layoutParams = contactsCard.layoutParams as LinearLayout.LayoutParams
+        layoutParams.topMargin = 0
+        contactsCard.layoutParams = layoutParams
+        
+        // 按排序值对应用进行排序
+        val sortedApps = savedApps.sortedWith(Comparator {
+                app1, app2 ->
+            val order1 = appOrders[app1] ?: Int.MAX_VALUE
+            val order2 = appOrders[app2] ?: Int.MAX_VALUE
+            order1.compareTo(order2)
+        })
+        
+        Log.d(TAG, "常用应用排序完成: ${sortedApps.size} 个应用")
+        
+        // 加载应用信息
+        for (packageName in sortedApps) {
+            try {
+                val packageInfo = packageManager.getPackageInfo(packageName, 0)
+                val appName = packageInfo.applicationInfo?.loadLabel(packageManager)?.toString() ?: packageName
+                val appIcon = packageInfo.applicationInfo?.loadIcon(packageManager)
+                
+                if (appIcon != null) {
+                    commonApps.add(CommonApp(packageName, appName, appIcon))
+                    Log.d(TAG, "加载应用: $appName ($packageName)")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "加载应用失败: $packageName", e)
+            }
+        }
+        
+        // 根据宽度动态计算列数，考虑额外的间距
+        recyclerViewCommonApps.post {
+            val recyclerViewWidth = recyclerViewCommonApps.width
+            val originalImageSize = 128 // 原始大小128dp
+            val scaledImageSize = GlobalScaleManager.getScaledValue(this, originalImageSize)
+            val appItemWidth = scaledImageSize + 32 + 16 // 应用项宽度 = 图标宽度 + 左右边距 + ItemDecoration右侧间距
+            val spanCount = maxOf(1, minOf(4, recyclerViewWidth / appItemWidth)) // 限制最大列数为4
+            val gridLayoutManager = GridLayoutManager(this, spanCount)
+            recyclerViewCommonApps.layoutManager = gridLayoutManager
+            commonAppsAdapter.notifyDataSetChanged()
+        }
+        
+        Log.d(TAG, "常用应用加载完成")
+    }
+}
+
+data class CommonApp(val packageName: String, val appName: String, val appIcon: Drawable)
+
+class CommonAppAdapter(private val apps: List<CommonApp>, private val listener: (String) -> Unit) : RecyclerView.Adapter<CommonAppAdapter.ViewHolder>() {
+    
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_common_app, parent, false)
+        return ViewHolder(view)
+    }
+    
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val app = apps[position]
+        holder.bind(app, listener)
+    }
+    
+    override fun getItemCount(): Int = apps.size
+    
+    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val iconView: ImageView = itemView.findViewById(R.id.appIcon)
+        private val nameView: TextView = itemView.findViewById(R.id.appName)
+        
+        fun bind(app: CommonApp, listener: (String) -> Unit) {
+            iconView.setImageDrawable(app.appIcon)
+            nameView.text = app.appName
+            
+            // 从 SharedPreferences 加载图标大小设置
+            val iconSizeValue = itemView.context.getSharedPreferences("OnePassPrefs", Context.MODE_PRIVATE).getInt("icon_size", 80)
+            // 将 0-100 的值映射到 100-240dp 的范围（增大图标大小），然后在缩小30%的基础上再缩小10%
+            val baseIconSize = 100 + (iconSizeValue * 140 / 100) // 增加100%
+            val originalIconSize = (baseIconSize * 0.7 * 0.9).toInt() // 缩小30%后再缩小10%
+            // 使用GlobalScaleManager进行缩放
+            val scaledIconSize = GlobalScaleManager.getScaledValue(itemView.context, originalIconSize)
+            val iconParams = iconView.layoutParams
+            iconParams.width = scaledIconSize
+            iconParams.height = scaledIconSize
+            iconView.layoutParams = iconParams
+            
+            val originalTextSize = (originalIconSize / 10).toFloat()
+            val scaledTextSize = GlobalScaleManager.getScaledValue(itemView.context, originalTextSize)
+            nameView.textSize = scaledTextSize
+            
+            itemView.setOnClickListener {
+                listener(app.packageName)
+            }
+        }
     }
 }
