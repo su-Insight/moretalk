@@ -262,7 +262,7 @@ class SettingsActivity : AppCompatActivity() {
                 // 创建应用图标
                 val iconView = android.widget.ImageView(this)
                 iconView.setImageDrawable(appIcon)
-                val iconParams = android.widget.LinearLayout.LayoutParams(64, 64)
+                val iconParams = android.widget.LinearLayout.LayoutParams(120, 120)
                 iconParams.setMargins(0, 0, 0, 0)
                 iconView.layoutParams = iconParams
                 

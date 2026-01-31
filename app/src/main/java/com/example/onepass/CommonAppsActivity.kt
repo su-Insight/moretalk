@@ -42,6 +42,23 @@ class CommonAppsActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerViewApps)
         recyclerView.layoutManager = LinearLayoutManager(this)
         
+        // 为搜索栏添加点击事件，确保点击任何位置都能激活输入
+        searchEdit.setOnClickListener {
+            searchEdit.isIconified = false
+            searchEdit.requestFocus()
+            val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            inputMethodManager.showSoftInput(searchEdit, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+        }
+        
+        // 为搜索栏的输入框添加点击事件
+        val searchPlate = searchEdit.findViewById<android.view.View>(androidx.appcompat.R.id.search_plate)
+        searchPlate?.setOnClickListener {
+            searchEdit.isIconified = false
+            searchEdit.requestFocus()
+            val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            inputMethodManager.showSoftInput(searchEdit, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+        }
+        
         loadApps(packageManager)
         adapter = AppAdapter(apps)
         recyclerView.adapter = adapter
