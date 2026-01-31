@@ -125,13 +125,17 @@ class MainActivity : AppCompatActivity() {
         // 权限请求完成后，延迟初始化TextToSpeech
         handler.postDelayed({
             if (!isTextToSpeechInitialized) {
+                Log.d(TAG, "开始延迟初始化TextToSpeech")
                 initTextToSpeech()
+            } else {
+                Log.d(TAG, "TextToSpeech已经初始化，跳过")
             }
-        }, 500)
+        }, 1000)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(TAG, "onCreate 开始")
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -141,14 +145,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         locationManager = LocationManager(this)
+        Log.d(TAG, "locationManager 初始化完成")
         
-        // 不在这里初始化TextToSpeech，而是在权限请求完成后初始化
-        // initTextToSpeech()
+        // 不在onCreate中初始化TextToSpeech，而是在onResume中初始化
+        Log.d(TAG, "准备在onResume中初始化TextToSpeech")
+        
         initViews()
         updateDate()
         checkLocationPermissionAndFetchWeather()
         
         handler.postDelayed(refreshRunnable, 30 * 60 * 1000)
+        Log.d(TAG, "onCreate 完成")
     }
 
     override fun onDestroy() {
@@ -160,53 +167,159 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        Log.d(TAG, "onStart 开始")
+        
+        // 在onStart中初始化TextToSpeech，而不是onResume
+        if (!isTextToSpeechInitialized) {
+            Log.d(TAG, "onStart中初始化TextToSpeech")
+            initTextToSpeech()
+        } else {
+            Log.d(TAG, "TextToSpeech已经初始化")
+        }
+        
+        Log.d(TAG, "onStart 完成")
+    }
+
     override fun onResume() {
         super.onResume()
+        Log.d(TAG, "onResume 开始")
+        
         updateDate()
         loadCommonApps()
         loadContacts()
+        
+        Log.d(TAG, "onResume 完成")
     }
 
     private fun initTextToSpeech() {
-        textToSpeech = TextToSpeech(this) { status ->
-            Log.d(TAG, "TextToSpeech初始化状态: $status")
-            if (status == TextToSpeech.SUCCESS) {
-                val result = textToSpeech.setLanguage(Locale.CHINA)
-                Log.d(TAG, "设置中文语言结果: $result")
-                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    Log.e(TAG, "不支持中文语音")
-                    showTTSErrorDialog()
+        android.util.Log.i("TTS_DEBUG", "开始初始化TextToSpeech")
+        try {
+            textToSpeech = TextToSpeech(this) { status ->
+                android.util.Log.i("TTS_DEBUG", "TextToSpeech初始化状态: $status")
+                if (status == TextToSpeech.SUCCESS) {
+                    android.util.Log.i("TTS_DEBUG", "TextToSpeech初始化成功，开始设置语言")
+                    val result = textToSpeech.setLanguage(Locale.CHINA)
+                    android.util.Log.i("TTS_DEBUG", "设置中文语言结果: $result")
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        android.util.Log.e("TTS_DEBUG", "不支持中文语音，结果: $result")
+                        showTTSErrorDialog()
+                    } else {
+                        isTextToSpeechInitialized = true
+                        android.util.Log.i("TTS_DEBUG", "语音播报初始化成功")
+                        
+                        try {
+                            // 设置语音参数
+                            textToSpeech.setSpeechRate(1.0f)
+                            textToSpeech.setPitch(1.0f)
+                            android.util.Log.i("TTS_DEBUG", "语音参数设置成功")
+                            
+                            // 设置播报监听器
+                            textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                                override fun onStart(utteranceId: String?) {
+                                    android.util.Log.i("TTS_DEBUG", "语音播报开始: $utteranceId")
+                                }
+                                
+                                override fun onDone(utteranceId: String?) {
+                                    android.util.Log.i("TTS_DEBUG", "语音播报完成: $utteranceId")
+                                }
+                                
+                                override fun onError(utteranceId: String?) {
+                                    android.util.Log.e("TTS_DEBUG", "语音播报错误: $utteranceId")
+                                }
+                                
+                                override fun onStop(utteranceId: String?, interrupted: Boolean) {
+                                    android.util.Log.i("TTS_DEBUG", "语音播报停止: $utteranceId, 中断: $interrupted")
+                                }
+                            })
+                            android.util.Log.i("TTS_DEBUG", "播报监听器设置成功")
+                        } catch (e: Exception) {
+                            android.util.Log.e("TTS_DEBUG", "设置语音参数时出错: ${e.message}", e)
+                        }
+                    }
                 } else {
-                    isTextToSpeechInitialized = true
-                    Log.d(TAG, "语音播报初始化成功")
-                    
-                    // 设置语音参数
-                    textToSpeech.setSpeechRate(1.0f)
-                    textToSpeech.setPitch(1.0f)
-                    
-                    // 设置播报监听器
-                    textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                        override fun onStart(utteranceId: String?) {
-                            Log.d(TAG, "语音播报开始: $utteranceId")
-                        }
-                        
-                        override fun onDone(utteranceId: String?) {
-                            Log.d(TAG, "语音播报完成: $utteranceId")
-                        }
-                        
-                        override fun onError(utteranceId: String?) {
-                            Log.e(TAG, "语音播报错误: $utteranceId")
-                        }
-                        
-                        override fun onStop(utteranceId: String?, interrupted: Boolean) {
-                            Log.d(TAG, "语音播报停止: $utteranceId, 中断: $interrupted")
-                        }
-                    })
+                    android.util.Log.e("TTS_DEBUG", "语音播报初始化失败: $status")
+                    android.util.Log.e("TTS_DEBUG", "尝试延迟重试...")
+                    // 延迟重试
+                    handler.postDelayed({
+                        android.util.Log.i("TTS_DEBUG", "开始重试初始化TextToSpeech")
+                        initTextToSpeechRetry()
+                    }, 2000)
+                    android.util.Log.i("TTS_DEBUG", "重试任务已安排")
                 }
-            } else {
-                Log.e(TAG, "语音播报初始化失败: $status")
-                showTTSErrorDialog()
             }
+        } catch (e: Exception) {
+            android.util.Log.e("TTS_DEBUG", "创建TextToSpeech时出错: ${e.message}", e)
+            android.util.Log.e("TTS_DEBUG", "尝试延迟重试...")
+            // 延迟重试
+            handler.postDelayed({
+                android.util.Log.i("TTS_DEBUG", "开始重试初始化TextToSpeech")
+                initTextToSpeechRetry()
+            }, 2000)
+            android.util.Log.i("TTS_DEBUG", "重试任务已安排")
+        }
+    }
+
+    private fun initTextToSpeechRetry() {
+        if (isTextToSpeechInitialized) {
+            android.util.Log.i("TTS_DEBUG", "TextToSpeech已经初始化，跳过重试")
+            return
+        }
+        
+        android.util.Log.i("TTS_DEBUG", "重试初始化TextToSpeech")
+        try {
+            textToSpeech = TextToSpeech(this) { status ->
+                android.util.Log.i("TTS_DEBUG", "重试 - TextToSpeech初始化状态: $status")
+                if (status == TextToSpeech.SUCCESS) {
+                    android.util.Log.i("TTS_DEBUG", "重试 - TextToSpeech初始化成功，开始设置语言")
+                    val result = textToSpeech.setLanguage(Locale.CHINA)
+                    android.util.Log.i("TTS_DEBUG", "重试 - 设置中文语言结果: $result")
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        android.util.Log.e("TTS_DEBUG", "重试 - 不支持中文语音，结果: $result")
+                        // 暂时不显示错误对话框
+                        // showTTSErrorDialog()
+                    } else {
+                        isTextToSpeechInitialized = true
+                        android.util.Log.i("TTS_DEBUG", "重试 - 语音播报初始化成功")
+                        
+                        try {
+                            textToSpeech.setSpeechRate(1.0f)
+                            textToSpeech.setPitch(1.0f)
+                            android.util.Log.i("TTS_DEBUG", "重试 - 语音参数设置成功")
+                            
+                            textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                                override fun onStart(utteranceId: String?) {
+                                    android.util.Log.i("TTS_DEBUG", "语音播报开始: $utteranceId")
+                                }
+                                
+                                override fun onDone(utteranceId: String?) {
+                                    android.util.Log.i("TTS_DEBUG", "语音播报完成: $utteranceId")
+                                }
+                                
+                                override fun onError(utteranceId: String?) {
+                                    android.util.Log.e("TTS_DEBUG", "语音播报错误: $utteranceId")
+                                }
+                                
+                                override fun onStop(utteranceId: String?, interrupted: Boolean) {
+                                    android.util.Log.i("TTS_DEBUG", "语音播报停止: $utteranceId, 中断: $interrupted")
+                                }
+                            })
+                            android.util.Log.i("TTS_DEBUG", "重试 - 播报监听器设置成功")
+                        } catch (e: Exception) {
+                            android.util.Log.e("TTS_DEBUG", "重试 - 设置语音参数时出错: ${e.message}", e)
+                        }
+                    }
+                } else {
+                    android.util.Log.e("TTS_DEBUG", "重试 - 语音播报初始化失败: $status")
+                    // 暂时不显示错误对话框
+                    // showTTSErrorDialog()
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("TTS_DEBUG", "重试 - 创建TextToSpeech时出错: ${e.message}", e)
+            // 暂时不显示错误对话框
+            // showTTSErrorDialog()
         }
     }
     
