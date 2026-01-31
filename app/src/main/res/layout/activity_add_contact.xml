@@ -26,7 +26,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="添加联系人"
-            android:textSize="20sp"
+            android:textSize="24sp"
             android:textStyle="bold"
             android:layout_marginStart="16dp"
             app:layout_constraintStart_toEndOf="@id/backButton"
@@ -36,10 +36,10 @@
         <!-- 联系人图片 -->
         <androidx.cardview.widget.CardView
             android:id="@+id/contactImageCard"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
             android:layout_marginTop="24dp"
-            app:cardCornerRadius="50dp"
+            app:cardCornerRadius="16dp"
             app:cardElevation="4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -80,17 +80,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="姓名"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textColor="#666666"
                     android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/editName"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="48dp"
                     android:hint="请输入姓名"
                     android:background="@null"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textColor="#333333"
                     android:layout_marginTop="4dp" />
 
@@ -123,17 +123,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="微信备注"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textColor="#666666"
                     android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/editWechatNote"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="48dp"
                     android:hint="请输入微信备注"
                     android:background="@null"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textColor="#333333"
                     android:layout_marginTop="4dp" />
 
@@ -166,18 +166,18 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="手机号"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textColor="#666666"
                     android:textStyle="bold" />
 
                 <EditText
                     android:id="@+id/editPhoneNumber"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="48dp"
                     android:hint="请输入手机号"
                     android:inputType="phone"
                     android:background="@null"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textColor="#333333"
                     android:layout_marginTop="4dp" />
 
@@ -210,7 +210,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="通讯选项"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textColor="#666666"
                     android:textStyle="bold" />
 
@@ -219,7 +219,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="微信视频"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textColor="#333333"
                     android:layout_marginTop="12dp" />
 
@@ -228,7 +228,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="微信语音"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textColor="#333333"
                     android:layout_marginTop="8dp" />
 
@@ -237,7 +237,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="拨打电话"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textColor="#333333"
                     android:layout_marginTop="8dp" />
 
@@ -251,7 +251,7 @@
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:text="保存"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="#ffffff"
             android:background="#4CAF50"
@@ -269,7 +269,7 @@
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:text="删除"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="#ffffff"
             android:background="#F44336"

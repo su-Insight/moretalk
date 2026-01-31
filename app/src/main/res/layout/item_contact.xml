@@ -14,8 +14,8 @@
 
         <ImageView
             android:id="@+id/contactImage"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
             android:src="@android:drawable/ic_menu_myplaces"
             android:scaleType="centerCrop"
             android:background="@android:color/darker_gray"
@@ -28,7 +28,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="联系人名称"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:layout_marginStart="16dp"
             app:layout_constraintStart_toEndOf="@id/contactImage"
@@ -40,7 +40,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="联系人信息"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textColor="#666666"
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
