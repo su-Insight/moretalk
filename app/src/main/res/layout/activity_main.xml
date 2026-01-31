@@ -35,6 +35,7 @@
             android:padding="16dp">
 
             <TextView
+                android:id="@+id/commonAppTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="常用应用"
@@ -146,6 +147,7 @@
             android:padding="16dp">
 
             <TextView
+                android:id="@+id/contactTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="联系人"

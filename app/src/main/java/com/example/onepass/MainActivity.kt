@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity() {
     private val KEY_COMMON_APPS = "common_apps"
     private val KEY_APP_ORDERS = "app_orders"
     private lateinit var commonAppsCard: CardView
+    private lateinit var commonAppTitle: TextView
     private lateinit var commonApp1: LinearLayout
     private lateinit var commonApp2: LinearLayout
     private lateinit var commonApp3: LinearLayout
@@ -104,6 +105,7 @@ class MainActivity : AppCompatActivity() {
     private val CONTACTS_PREFS = "contacts_prefs"
     private val KEY_CONTACTS = "contacts"
     private lateinit var contactsCard: CardView
+    private lateinit var contactTitle: TextView
     private lateinit var recyclerViewContacts: RecyclerView
     private lateinit var textNoContacts: TextView
     private val contacts = mutableListOf<Contact>()
@@ -369,6 +371,7 @@ class MainActivity : AppCompatActivity() {
 
         // 初始化常用应用视图
         commonAppsCard = findViewById(R.id.commonAppsCard)
+        commonAppTitle = commonAppsCard.findViewById(R.id.commonAppTitle)
         commonApp1 = findViewById(R.id.commonApp1)
         commonApp2 = findViewById(R.id.commonApp2)
         commonApp3 = findViewById(R.id.commonApp3)
@@ -378,6 +381,7 @@ class MainActivity : AppCompatActivity() {
 
         // 初始化联系人视图
         contactsCard = findViewById(R.id.contactsCard)
+        contactTitle = contactsCard.findViewById(R.id.contactTitle)
         recyclerViewContacts = findViewById(R.id.recyclerViewContacts)
         textNoContacts = findViewById(R.id.textNoContacts)
         
@@ -745,8 +749,17 @@ class MainActivity : AppCompatActivity() {
         val iconSizeValue = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_ICON_SIZE, 80)
         // 将 0-100 的值映射到 100-240dp 的范围（增大图标大小），然后在缩小30%的基础上再缩小10%
         val baseIconSize = 100 + (iconSizeValue * 140 / 100)
-        val iconSize = (baseIconSize * 0.7 * 0.9).toInt() // 缩小30%后再缩小10%
-        val textSize = (iconSize / 10).toFloat()
+        val originalIconSize = (baseIconSize * 0.7 * 0.9).toInt() // 缩小30%后再缩小10%
+        // 使用GlobalScaleManager进行缩放
+        val iconSize = GlobalScaleManager.getScaledValue(this, originalIconSize)
+        val originalTextSize = (originalIconSize / 10).toFloat()
+        val textSize = GlobalScaleManager.getScaledValue(this, originalTextSize)
+        
+        // 控制标题大小
+        val originalTitleSize = 23f // 原始大小23sp
+        val scaledTitleSize = GlobalScaleManager.getScaledValue(this, originalTitleSize)
+        commonAppTitle.textSize = scaledTitleSize
+        contactTitle.textSize = scaledTitleSize
         
         // 从 SharedPreferences 加载已保存的应用列表
         val savedApps = getSharedPreferences(COMMON_APPS_PREFS, Context.MODE_PRIVATE)
