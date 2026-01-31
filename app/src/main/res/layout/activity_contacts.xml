@@ -1,147 +1,135 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
+    <!-- 页面标题 -->
+    <TextView
+        android:id="@+id/textViewTitle"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:text="联系人"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:paddingTop="16dp"
+        android:paddingBottom="6dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- 页面标题 -->
-        <TextView
-            android:id="@+id/textViewTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="联系人"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:layout_marginTop="32dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+    <!-- 联系人列表区域 -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/contactsCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewTitle"
+        app:layout_constraintBottom_toTopOf="@id/btnAddContact">
 
-        <!-- 联系人列表区域 -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/contactsCard"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textViewTitle">
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/textContactsTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="联系人列表"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recyclerViewContacts"
-                    android:layout_width="0dp"
-                    android:layout_height="400dp"
-                    android:layout_marginTop="16dp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/textContactsTitle" />
-
-                <TextView
-                    android:id="@+id/textNoContacts"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:text="暂无联系人"
-                    android:textSize="18sp"
-                    android:textColor="#999999"
-                    android:gravity="center"
-                    android:padding="32dp"
-                    android:visibility="gone"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/textContactsTitle"
-                    android:layout_marginTop="16dp" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- 添加联系人按钮行 -->
-        <Button
-            android:id="@+id/btnAddContact"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:text="添加联系人"
-            android:textSize="18sp"
-            android:textColor="#ffffff"
-            android:background="@android:color/holo_blue_dark"
-            android:layout_marginTop="32dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/contactsCard" />
-
-        <!-- 搜索联系人按钮行 -->
-        <Button
-            android:id="@+id/btnSearchContact"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:text="搜索联系人"
-            android:textSize="18sp"
-            android:textColor="#ffffff"
-            android:background="@android:color/holo_purple"
-            android:layout_marginTop="32dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/btnAddContact" />
-
-        <!-- 导入导出联系人按钮行 -->
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/importExportLayout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/btnSearchContact">
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
-            <Button
-                android:id="@+id/btnImportContacts"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewContacts"
                 android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:text="导入联系人"
-                android:textSize="16sp"
-                android:textColor="#ffffff"
-                android:background="@android:color/holo_green_dark"
-                android:layout_marginEnd="8dp"
+                android:layout_height="0dp"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/btnExportContacts"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
 
-            <Button
-                android:id="@+id/btnExportContacts"
+            <TextView
+                android:id="@+id/textNoContacts"
                 android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:text="导出联系人"
-                android:textSize="16sp"
-                android:textColor="#ffffff"
-                android:background="@android:color/holo_orange_dark"
-                android:layout_marginStart="8dp"
-                app:layout_constraintStart_toEndOf="@id/btnImportContacts"
+                android:layout_height="0dp"
+                android:text="暂无联系人"
+                android:textSize="18sp"
+                android:textColor="#999999"
+                android:gravity="center"
+                android:padding="32dp"
+                android:visibility="gone"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
+    </androidx.cardview.widget.CardView>
+
+    <!-- 添加联系人按钮行 -->
+    <Button
+        android:id="@+id/btnAddContact"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:text="添加联系人"
+        android:textSize="18sp"
+        android:textColor="#ffffff"
+        android:layout_marginBottom="8dp"
+        android:background="@android:color/holo_blue_dark"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btnSearchContact" />
+
+    <!-- 搜索联系人按钮行 -->
+    <Button
+        android:id="@+id/btnSearchContact"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:text="搜索联系人"
+        android:textSize="18sp"
+        android:textColor="#ffffff"
+        android:layout_marginBottom="8dp"
+        android:background="@android:color/holo_purple"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/importExportLayout" />
+
+    <!-- 导入导出联系人按钮行 -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/importExportLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/btnImportContacts"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:text="导入联系人"
+            android:textSize="16sp"
+            android:textColor="#ffffff"
+            android:background="@android:color/holo_green_dark"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btnExportContacts"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <Button
+            android:id="@+id/btnExportContacts"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:text="导出联系人"
+            android:textSize="16sp"
+            android:textColor="#ffffff"
+            android:background="@android:color/holo_orange_dark"
+            android:layout_marginStart="8dp"
+            app:layout_constraintStart_toEndOf="@id/btnImportContacts"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
-</ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -382,6 +382,10 @@ class MainActivity : AppCompatActivity() {
         }
         recyclerViewCommonApps.adapter = commonAppsAdapter
         
+        // 设置默认的LayoutManager
+        val defaultLayoutManager = GridLayoutManager(this, 3)
+        recyclerViewCommonApps.layoutManager = defaultLayoutManager
+        
         // 添加ItemDecoration来增加图标之间的间距
         recyclerViewCommonApps.addItemDecoration(object : RecyclerView.ItemDecoration() {
             override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
@@ -1105,6 +1109,9 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "加载应用失败: $packageName", e)
             }
         }
+        
+        // 通知适配器数据变化
+        commonAppsAdapter.notifyDataSetChanged()
         
         // 根据宽度动态计算列数，考虑额外的间距
         recyclerViewCommonApps.post {
