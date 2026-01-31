@@ -210,26 +210,58 @@ class WechatAccessibilityService : AccessibilityService() {
 
         // 1. 检测底部标签 (使用计数法，更稳健)
         var matchCount = 0
-        if (findNodeByText(rootNode, "微信")) matchCount++
-        if (findNodeByText(rootNode, "通讯录")) matchCount++
+        val hasWechatTab = findNodeByText(rootNode, "微信")
+        val hasContactsTab = findNodeByText(rootNode, "通讯录")
+        if (hasWechatTab) matchCount++
+        if (hasContactsTab) matchCount++
         if (findNodeByText(rootNode, "发现")) matchCount++
         if (findNodeByText(rootNode, "我")) matchCount++
 
         // 英文适配
         var engMatchCount = 0
-        if (findNodeByText(rootNode, "Chats")) engMatchCount++
-        if (findNodeByText(rootNode, "Contacts")) engMatchCount++
+        val hasChatsTab = findNodeByText(rootNode, "Chats")
+        val hasContactsEngTab = findNodeByText(rootNode, "Contacts")
+        if (hasChatsTab) engMatchCount++
+        if (hasContactsEngTab) engMatchCount++
         if (findNodeByText(rootNode, "Discover")) engMatchCount++
         if (findNodeByText(rootNode, "Me")) engMatchCount++
+        
+        // 2. 检测"我的"页面特有的元素
+        var mePageMatchCount = 0
+        if (findNodeByText(rootNode, "钱包")) mePageMatchCount++
+        if (findNodeByText(rootNode, "收藏")) mePageMatchCount++
+        if (findNodeByText(rootNode, "卡包")) mePageMatchCount++
+        if (findNodeByText(rootNode, "设置")) mePageMatchCount++
+        
+        // 英文适配
+        var mePageEngMatchCount = 0
+        if (findNodeByText(rootNode, "Wallet")) mePageEngMatchCount++
+        if (findNodeByText(rootNode, "Favorites")) mePageEngMatchCount++
+        if (findNodeByText(rootNode, "Cards")) mePageEngMatchCount++
+        if (findNodeByText(rootNode, "Settings")) mePageEngMatchCount++
 
-        Log.d(TAG, "首页特征匹配: 中文=$matchCount, 英文=$engMatchCount")
+        Log.d(TAG, "首页特征匹配: 中文=$matchCount, 英文=$engMatchCount, 我的页面中文=$mePageMatchCount, 我的页面英文=$mePageEngMatchCount")
 
-        // 只要匹配到 2 个及以上，就认为是首页 (防止遮挡导致误判)
-        val isHome = matchCount >= 2 || engMatchCount >= 2
+        // 检测是否同时存在"微信"和"通讯录"标签
+        val hasWechatAndContacts = (hasWechatTab && hasContactsTab) || (hasChatsTab && hasContactsEngTab)
+        
+        // 如果同时存在"微信"和"通讯录"标签，点击"微信"按钮回到聊天页面
+        if (hasWechatAndContacts) {
+            Log.d(TAG, ">>> 检测到微信和通讯录标签，点击微信按钮回到聊天页面 <<<")
+            // 查找并点击"微信"或"Chats"按钮
+            val wechatNode = findNodeByExactText(rootNode, "微信") ?: findNodeByExactText(rootNode, "Chats")
+            if (wechatNode != null) {
+                wechatNode.click()
+                Log.d(TAG, ">>> 点击微信按钮成功 <<<")
+            }
+        }
+
+        // 只要匹配到 2 个及以上底部标签，或者匹配到 2 个及以上"我的"页面元素，就认为是首页
+        val isHome = (matchCount >= 2 || engMatchCount >= 2) || (mePageMatchCount >= 2 || mePageEngMatchCount >= 2)
 
         if (isHome) {
-            Log.d(TAG, ">>> 判定为微信首页，跳转步骤2 <<<")
-            WeChatData.updateLanguage(engMatchCount >= 2)
+            Log.d(TAG, ">>> 判定为微信首页（包括我的页面），跳转步骤2 <<<")
+            WeChatData.updateLanguage(engMatchCount >= 2 || mePageEngMatchCount >= 2)
             WeChatData.updateIndex(2)
         } else {
             // 不在首页的处理逻辑
@@ -241,6 +273,26 @@ class WechatAccessibilityService : AccessibilityService() {
                 performGlobalAction(GLOBAL_ACTION_BACK)
             }
         }
+    }
+    
+    /**
+     * 查找与文本完全匹配的节点
+     */
+    private fun findNodeByExactText(node: AccessibilityNodeInfo?, text: String): AccessibilityNodeInfo? {
+        if (node == null) return null
+        
+        if (node.text?.toString() == text) {
+            return node
+        }
+        
+        for (i in 0 until node.childCount) {
+            val foundNode = findNodeByExactText(node.getChild(i), text)
+            if (foundNode != null) {
+                return foundNode
+            }
+        }
+        
+        return null
     }
     private fun AccessibilityNodeInfo?.click(): Boolean {
         this ?: return false
