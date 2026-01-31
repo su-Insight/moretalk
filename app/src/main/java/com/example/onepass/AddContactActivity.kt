@@ -29,7 +29,7 @@ class AddContactActivity : AppCompatActivity() {
         private const val REQUEST_PICK_IMAGE = 103
     }
     
-    private lateinit var backButton: ImageView
+
     private lateinit var contactImage: ImageView
     private lateinit var btnSave: android.widget.Button
     private lateinit var btnDelete: android.widget.Button
@@ -44,15 +44,9 @@ class AddContactActivity : AppCompatActivity() {
         
         Log.d(TAG, "布局设置成功，开始初始化视图")
         
-        backButton = findViewById(R.id.backButton)
         contactImage = findViewById(R.id.contactImage)
         btnSave = findViewById(R.id.btnSave)
         btnDelete = findViewById(R.id.btnDelete)
-        
-        backButton.setOnClickListener {
-            Log.d(TAG, "返回按钮被点击")
-            finish()
-        }
         
         contactImage.setOnClickListener {
             Log.d(TAG, "联系人图片被点击")

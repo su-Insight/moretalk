@@ -55,7 +55,7 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
         }
     }
     
-    private lateinit var backButton: ImageView
+
     private lateinit var btnSearchContact: android.widget.Button
     private lateinit var btnAddContact: android.widget.Button
     private lateinit var btnImportContacts: android.widget.Button
@@ -74,7 +74,6 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
         
         Log.d(TAG, "布局设置成功，开始初始化视图")
         
-        backButton = findViewById(R.id.backButton)
         btnSearchContact = findViewById(R.id.btnSearchContact)
         btnAddContact = findViewById(R.id.btnAddContact)
         btnImportContacts = findViewById(R.id.btnImportContacts)
@@ -86,11 +85,6 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
         recyclerViewContacts.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
         contactAdapter = ContactAdapter(contacts, this)
         recyclerViewContacts.adapter = contactAdapter
-        
-        backButton.setOnClickListener {
-            Log.d(TAG, "返回按钮被点击")
-            finish()
-        }
         
         btnSearchContact.setOnClickListener {
             Log.d(TAG, "搜索联系人按钮被点击")

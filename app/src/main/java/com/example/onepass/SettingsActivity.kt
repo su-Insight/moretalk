@@ -11,9 +11,10 @@ import android.widget.TextView
 import android.widget.Toast
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import com.example.onepass.GlobalScaleManager
 
 class SettingsActivity : AppCompatActivity() {
-    private lateinit var backButton: ImageView
+
     private lateinit var userAvatar: ImageView
     private lateinit var userName: TextView
     private lateinit var userStatus: TextView
@@ -44,7 +45,6 @@ class SettingsActivity : AppCompatActivity() {
     private val KEY_WEATHER_ENABLED = "weather_enabled"
     private val KEY_WEATHER_VOLUME = "weather_volume"
     private val KEY_COMMON_APPS = "common_apps"
-    private val KEY_ICON_SIZE = "icon_size"
     private val AVAILABLE_APPS = arrayOf("微信", "QQ", "微博", "浏览器", "邮件")
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,7 +65,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
-        backButton = findViewById(R.id.backButton)
         userAvatar = findViewById(R.id.userAvatar)
         userName = findViewById(R.id.userName)
         userStatus = findViewById(R.id.userStatus)
@@ -75,6 +74,10 @@ class SettingsActivity : AppCompatActivity() {
         seekBarIconSize = findViewById(R.id.seekBarIconSize)
         textIconSize = findViewById(R.id.textIconSize)
         btnSetDefaultLauncher = findViewById(R.id.btnSetDefaultLauncher)
+        
+        // 设置缩放比例进度条的范围
+        seekBarIconSize.min = 60
+        seekBarIconSize.max = 100
 
         // new controls
         btnCommonApps = findViewById(R.id.btnCommonApps)
@@ -104,17 +107,15 @@ class SettingsActivity : AppCompatActivity() {
 
         seekBarWeatherVol.isEnabled = weatherEnabled
 
-        val iconSize = prefs.getInt(KEY_ICON_SIZE, 160)
-        seekBarIconSize.progress = iconSize
-        textIconSize.text = iconSize.toString() + "dp"
+        val scalePercentage = GlobalScaleManager.getScalePercentage(this)
+        seekBarIconSize.progress = scalePercentage
+        textIconSize.text = scalePercentage.toString() + "%"
 
         val commonAppsSet = prefs.getStringSet(KEY_COMMON_APPS, HashSet<String>())
         loadCommonApps(commonAppsSet)
     }
 
     private fun setupListeners() {
-        backButton.setOnClickListener { finish() }
-
         userAvatar.setOnClickListener {
             if (isLoggedIn) {
                 Toast.makeText(this, "已登录", Toast.LENGTH_SHORT).show()
@@ -133,14 +134,15 @@ class SettingsActivity : AppCompatActivity() {
 
         seekBarIconSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                textIconSize.text = progress.toString() + "dp"
+                val clampedProgress = progress.coerceIn(60, 100)
+                textIconSize.text = clampedProgress.toString() + "%"
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                prefs.edit().putInt(KEY_ICON_SIZE, seekBarIconSize.progress).apply()
-                Toast.makeText(this@SettingsActivity, "图标大小已设置为 " + seekBarIconSize.progress + "dp", Toast.LENGTH_SHORT).show()
+                val clampedProgress = seekBarIconSize.progress.coerceIn(60, 100)
+                GlobalScaleManager.setScalePercentage(this@SettingsActivity, clampedProgress)
+                Toast.makeText(this@SettingsActivity, "缩放比例已设置为 " + clampedProgress + "%", Toast.LENGTH_SHORT).show()
             }
         })
 

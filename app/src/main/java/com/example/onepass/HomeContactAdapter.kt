@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.onepass.GlobalScaleManager
 
 class HomeContactAdapter(private val contacts: List<Contact>, private val listener: OnContactClickListener) : RecyclerView.Adapter<HomeContactAdapter.ContactViewHolder>() {
 
@@ -25,8 +26,22 @@ class HomeContactAdapter(private val contacts: List<Contact>, private val listen
 
     override fun onBindViewHolder(holder: ContactViewHolder, position: Int) {
         val contact = contacts[position]
+        val context = holder.itemView.context
         
         holder.contactName.text = contact.name
+        
+        // 根据缩放比例调整头像大小
+        val originalImageSize = 400 // 当前最大尺寸594dp * 70%
+        val scaledImageSize = GlobalScaleManager.getScaledValue(context, originalImageSize)
+        val layoutParams = holder.contactImage.layoutParams
+        layoutParams.width = scaledImageSize
+        layoutParams.height = scaledImageSize
+        holder.contactImage.layoutParams = layoutParams
+        
+        // 根据缩放比例调整字体大小
+        val originalTextSize = 26f // 当前最大尺寸46.2sp * 70%
+        val scaledTextSize = GlobalScaleManager.getScaledValue(context, originalTextSize)
+        holder.contactName.textSize = scaledTextSize
         
         if (!contact.imagePath.isNullOrEmpty()) {
             android.util.Log.d("HomeContactAdapter", "加载图片: ${contact.imagePath}")

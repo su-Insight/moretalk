@@ -12,7 +12,7 @@ class ContactDetailActivity : AppCompatActivity() {
         const val EXTRA_CONTACT_ID = "contact_id"
     }
     
-    private lateinit var backButton: ImageView
+
     private lateinit var contactImage: ImageView
     private lateinit var textContactName: android.widget.TextView
     private lateinit var textPhoneNumber: android.widget.TextView
@@ -30,18 +30,12 @@ class ContactDetailActivity : AppCompatActivity() {
         
         Log.d(TAG, "布局设置成功，开始初始化视图")
         
-        backButton = findViewById(R.id.backButton)
         contactImage = findViewById(R.id.contactImage)
         textContactName = findViewById(R.id.textContactName)
         textPhoneNumber = findViewById(R.id.textPhoneNumber)
         textWechatNote = findViewById(R.id.textWechatNote)
         textFeatures = findViewById(R.id.textFeatures)
         btnDeleteContact = findViewById(R.id.btnDeleteContact)
-        
-        backButton.setOnClickListener {
-            Log.d(TAG, "返回按钮被点击")
-            finish()
-        }
         
         btnDeleteContact.setOnClickListener {
             Log.d(TAG, "删除联系人按钮被点击")
