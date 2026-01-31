@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textContactName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="姓名: 张三"
+            android:textSize="18sp"
+            android:textColor="#000000"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/textContactWechat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="微信: zhangsan"
+            android:textSize="16sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/textContactPhone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="手机: 13800138000"
+            android:textSize="16sp"
+            android:textColor="#666666" />
+
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/imageContactAvatar"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:src="@android:drawable/ic_menu_myplaces"
+        android:scaleType="centerCrop"
+        android:background="#E0E0E0"
+        android:layout_marginLeft="16dp" />
+
+</LinearLayout>

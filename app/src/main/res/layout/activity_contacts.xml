@@ -16,6 +16,7 @@
             android:layout_height="48dp"
             android:src="@android:drawable/ic_menu_revert"
             android:padding="12dp"
+            android:layout_marginTop="32dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -85,19 +86,6 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- 搜索联系人按钮行 -->
-        <Button
-            android:id="@+id/btnSearchContact"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:text="搜索联系人"
-            android:textColor="#ffffff"
-            android:background="@android:color/holo_purple"
-            android:layout_marginTop="16dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/contactsCard" />
-
         <!-- 添加联系人按钮行 -->
         <Button
             android:id="@+id/btnAddContact"
@@ -106,20 +94,33 @@
             android:text="添加联系人"
             android:textColor="#ffffff"
             android:background="@android:color/holo_blue_dark"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="32dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/btnSearchContact" />
+            app:layout_constraintTop_toBottomOf="@id/contactsCard" />
+
+        <!-- 搜索联系人按钮行 -->
+        <Button
+            android:id="@+id/btnSearchContact"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:text="搜索联系人"
+            android:textColor="#ffffff"
+            android:background="@android:color/holo_purple"
+            android:layout_marginTop="32dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btnAddContact" />
 
         <!-- 导入导出联系人按钮行 -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/importExportLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="32dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/btnAddContact">
+            app:layout_constraintTop_toBottomOf="@id/btnSearchContact">
 
             <Button
                 android:id="@+id/btnImportContacts"

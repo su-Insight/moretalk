@@ -7,6 +7,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="#F5F5F5"
         android:padding="16dp">
 
         <!-- 顶部返回按钮 -->
@@ -16,6 +17,7 @@
             android:layout_height="48dp"
             android:src="@android:drawable/ic_menu_revert"
             android:padding="12dp"
+            android:layout_marginTop="32dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -32,192 +34,250 @@
             app:layout_constraintBottom_toBottomOf="@id/backButton" />
 
         <!-- 联系人图片 -->
-        <ImageView
-            android:id="@+id/contactImage"
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-            android:src="@android:drawable/ic_menu_gallery"
-            android:scaleType="centerCrop"
-            android:background="@android:color/darker_gray"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/contactImageCard"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
             android:layout_marginTop="24dp"
+            app:cardCornerRadius="50dp"
+            app:cardElevation="4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/backButton" />
+            app:layout_constraintTop_toBottomOf="@id/backButton">
+
+            <ImageView
+                android:id="@+id/contactImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@android:drawable/ic_menu_gallery"
+                android:scaleType="centerCrop"
+                android:background="#E0E0E0" />
+
+        </androidx.cardview.widget.CardView>
 
         <!-- 姓名输入 -->
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/nameLayout"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/nameCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginTop="24dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/contactImage">
+            app:layout_constraintTop_toBottomOf="@id/contactImageCard">
 
-            <TextView
-                android:id="@+id/textName"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="姓名"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <EditText
-                android:id="@+id/editName"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:hint="请输入姓名"
-                android:background="@android:drawable/edit_text"
-                android:layout_marginTop="8dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/textName" />
+                <TextView
+                    android:id="@+id/textName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="姓名"
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:textStyle="bold" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+                <EditText
+                    android:id="@+id/editName"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:hint="请输入姓名"
+                    android:background="@null"
+                    android:textSize="16sp"
+                    android:textColor="#333333"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
 
         <!-- 微信备注输入 -->
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/wechatNoteLayout"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/wechatNoteCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginTop="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/nameLayout">
+            app:layout_constraintTop_toBottomOf="@id/nameCard">
 
-            <TextView
-                android:id="@+id/textWechatNote"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="微信备注"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <EditText
-                android:id="@+id/editWechatNote"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:hint="请输入微信备注"
-                android:background="@android:drawable/edit_text"
-                android:layout_marginTop="8dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/textWechatNote" />
+                <TextView
+                    android:id="@+id/textWechatNote"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="微信备注"
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:textStyle="bold" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+                <EditText
+                    android:id="@+id/editWechatNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:hint="请输入微信备注"
+                    android:background="@null"
+                    android:textSize="16sp"
+                    android:textColor="#333333"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
 
         <!-- 手机号输入 -->
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/phoneNumberLayout"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/phoneNumberCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginTop="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/wechatNoteLayout">
+            app:layout_constraintTop_toBottomOf="@id/wechatNoteCard">
 
-            <TextView
-                android:id="@+id/textPhoneNumber"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="手机号"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <EditText
-                android:id="@+id/editPhoneNumber"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:hint="请输入手机号"
-                android:inputType="phone"
-                android:background="@android:drawable/edit_text"
-                android:layout_marginTop="8dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/textPhoneNumber" />
+                <TextView
+                    android:id="@+id/textPhoneNumber"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="手机号"
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:textStyle="bold" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+                <EditText
+                    android:id="@+id/editPhoneNumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:hint="请输入手机号"
+                    android:inputType="phone"
+                    android:background="@null"
+                    android:textSize="16sp"
+                    android:textColor="#333333"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
 
         <!-- 通讯选项 -->
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/communicationLayout"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/communicationCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginTop="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/phoneNumberLayout">
+            app:layout_constraintTop_toBottomOf="@id/phoneNumberCard">
 
-            <TextView
-                android:id="@+id/textCommunication"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="通讯选项"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <CheckBox
-                android:id="@+id/checkWechatVideo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="微信视频"
-                android:textSize="14sp"
-                android:layout_marginTop="16dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/textCommunication" />
+                <TextView
+                    android:id="@+id/textCommunication"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="通讯选项"
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:textStyle="bold" />
 
-            <CheckBox
-                android:id="@+id/checkWechatVoice"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="微信语音"
-                android:textSize="14sp"
-                android:layout_marginTop="12dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/checkWechatVideo" />
+                <CheckBox
+                    android:id="@+id/checkWechatVideo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="微信视频"
+                    android:textSize="16sp"
+                    android:textColor="#333333"
+                    android:layout_marginTop="12dp" />
 
-            <CheckBox
-                android:id="@+id/checkPhoneCall"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="拨打电话"
-                android:textSize="14sp"
-                android:layout_marginTop="12dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/checkWechatVoice" />
+                <CheckBox
+                    android:id="@+id/checkWechatVoice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="微信语音"
+                    android:textSize="16sp"
+                    android:textColor="#333333"
+                    android:layout_marginTop="8dp" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+                <CheckBox
+                    android:id="@+id/checkPhoneCall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="拨打电话"
+                    android:textSize="16sp"
+                    android:textColor="#333333"
+                    android:layout_marginTop="8dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
 
         <!-- 保存按钮 -->
         <Button
             android:id="@+id/btnSave"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="56dp"
             android:text="保存"
+            android:textSize="16sp"
+            android:textStyle="bold"
             android:textColor="#ffffff"
-            android:background="@android:color/holo_green_dark"
+            android:background="#4CAF50"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginTop="32dp"
+            android:elevation="4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/communicationLayout" />
+            app:layout_constraintTop_toBottomOf="@id/communicationCard" />
 
         <!-- 删除按钮 -->
         <Button
             android:id="@+id/btnDelete"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="56dp"
             android:text="删除"
+            android:textSize="16sp"
+            android:textStyle="bold"
             android:textColor="#ffffff"
-            android:background="@android:color/holo_red_dark"
+            android:background="#F44336"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginTop="16dp"
+            android:layout_marginBottom="32dp"
+            android:elevation="4dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/btnSave" />

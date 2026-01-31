@@ -39,7 +39,7 @@
                 android:layout_height="wrap_content"
                 android:text="常用应用"
                 android:textColor="#333333"
-                android:textSize="16sp"
+                android:textSize="23sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="12dp" />
 
@@ -150,7 +150,7 @@
                 android:layout_height="wrap_content"
                 android:text="联系人"
                 android:textColor="#333333"
-                android:textSize="16sp"
+                android:textSize="23sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="12dp" />
 
@@ -164,7 +164,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="暂无联系人"
-                android:textSize="14sp"
+                android:textSize="18sp"
                 android:textColor="#999999"
                 android:gravity="center"
                 android:padding="32dp"

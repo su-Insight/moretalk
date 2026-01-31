@@ -7,15 +7,18 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:paddingTop="16dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
 
         <!-- 顶部返回按钮 -->
         <ImageView
             android:id="@+id/backButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:src="@android:drawable/ic_menu_revert"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:padding="12dp"
+            android:layout_marginTop="32dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -49,7 +52,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="未登录"
-                    android:textSize="18sp"
+                    android:textSize="31sp"
                     android:textStyle="bold"
                     android:layout_marginStart="16dp"
                     app:layout_constraintStart_toEndOf="@id/userAvatar"
@@ -60,7 +63,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="点击登录"
-                    android:textSize="14sp"
+                    android:textSize="24sp"
                     android:textColor="#666666"
                     android:layout_marginStart="16dp"
                     app:layout_constraintStart_toEndOf="@id/userAvatar"
@@ -91,7 +94,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="日期样式"
-                    android:textSize="16sp"
+                    android:textSize="27sp"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -110,12 +113,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="农历"
+                        android:textSize="24sp"
                         android:layout_marginEnd="24dp" />
                     <RadioButton
                         android:id="@+id/radioSolar"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="阳历" />
+                        android:text="阳历"
+                        android:textSize="24sp" />
                 </RadioGroup>
 
             </androidx.constraintlayout.widget.ConstraintLayout>
@@ -143,7 +148,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="常用应用"
-                    android:textSize="16sp"
+                    android:textSize="27sp"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -153,7 +158,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="管理"
-                    android:textSize="12sp"
+                    android:textSize="20sp"
                     android:minHeight="32dp"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
@@ -183,7 +188,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="暂无常用应用"
-                    android:textSize="14sp"
+                    android:textSize="24sp"
                     android:textColor="#999999"
                     android:gravity="center"
                     android:padding="16dp"
@@ -217,7 +222,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="联系人"
-                    android:textSize="16sp"
+                    android:textSize="27sp"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -227,7 +232,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="管理"
-                    android:textSize="12sp"
+                    android:textSize="20sp"
                     android:minHeight="32dp"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
@@ -259,7 +264,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="图标大小"
-                    android:textSize="16sp"
+                    android:textSize="27sp"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -269,7 +274,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="50dp"
-                    android:textSize="14sp"
+                    android:textSize="24sp"
                     android:textColor="#666666"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="@id/textIconSizeTitle" />
@@ -310,7 +315,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="天气播报"
-                    android:textSize="16sp"
+                    android:textSize="27sp"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -328,7 +333,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="50%"
-                    android:textSize="14sp"
+                    android:textSize="24sp"
                     android:textColor="#666666"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/textWeatherTitle"
@@ -354,6 +359,7 @@
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:text="设置为默认桌面"
+            android:textSize="24sp"
             android:layout_marginTop="24dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

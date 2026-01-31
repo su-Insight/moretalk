@@ -256,16 +256,48 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
         val builder = android.app.AlertDialog.Builder(this)
         builder.setTitle("搜索结果 (${results.size} 个)")
         
-        // 创建结果列表
-        val resultItems = results.map { contact ->
-            val name = contact.wechatNote.ifEmpty { contact.name }
-            val info = if (contact.phoneNumber.isNotEmpty()) " | ${contact.phoneNumber}" else ""
-            "$name$info"
-        }.toTypedArray()
+        // 使用自定义适配器显示结果
+        val adapter = object : android.widget.ArrayAdapter<Contact>(this, R.layout.item_search_result, results) {
+            override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                val view = convertView ?: android.view.LayoutInflater.from(context).inflate(R.layout.item_search_result, parent, false)
+                
+                val contact = getItem(position)
+                if (contact != null) {
+                    view.findViewById<android.widget.TextView>(R.id.textContactName).text = "姓名: ${contact.name}"
+                    view.findViewById<android.widget.TextView>(R.id.textContactWechat).text = "微信: ${contact.wechatNote}"
+                    view.findViewById<android.widget.TextView>(R.id.textContactPhone).text = "手机: ${contact.phoneNumber}"
+                    
+                    // 加载联系人头像
+                    val avatarImage = view.findViewById<android.widget.ImageView>(R.id.imageContactAvatar)
+                    if (!contact.imagePath.isNullOrEmpty()) {
+                        val imageFile = java.io.File(contact.imagePath)
+                        if (imageFile.exists()) {
+                            try {
+                                val bitmap = android.graphics.BitmapFactory.decodeFile(contact.imagePath)
+                                if (bitmap != null) {
+                                    avatarImage.setImageBitmap(bitmap)
+                                } else {
+                                    avatarImage.setImageResource(android.R.drawable.ic_menu_myplaces)
+                                }
+                            } catch (e: Exception) {
+                                Log.e(TAG, "加载头像失败: ${e.message}")
+                                avatarImage.setImageResource(android.R.drawable.ic_menu_myplaces)
+                            }
+                        } else {
+                            avatarImage.setImageResource(android.R.drawable.ic_menu_myplaces)
+                        }
+                    } else {
+                        avatarImage.setImageResource(android.R.drawable.ic_menu_myplaces)
+                    }
+                }
+                
+                return view
+            }
+        }
         
-        builder.setItems(resultItems) { dialog, which ->
+        builder.setAdapter(adapter) { dialog, which ->
             val selectedContact = results[which]
-            Log.d(TAG, "选择了搜索结果: ${selectedContact.wechatNote}")
+            Log.d(TAG, "选择了搜索结果: ${selectedContact.name}")
             // 启动添加联系人页面并传递联系人信息
             val intent = android.content.Intent(this, AddContactActivity::class.java)
             intent.putExtra("contact_id", selectedContact.id)

@@ -675,7 +675,9 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "开始加载常用应用")
         
         // 从 SharedPreferences 加载图标大小设置
-        val iconSize = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_ICON_SIZE, 160)
+        val iconSizeValue = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_ICON_SIZE, 80)
+        // 将 0-100 的值映射到 80-192dp 的范围（比之前缩小20%）
+        val iconSize = 80 + (iconSizeValue * 112 / 100)
         val textSize = (iconSize / 10).toFloat()
         
         // 从 SharedPreferences 加载已保存的应用列表
