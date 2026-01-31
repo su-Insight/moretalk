@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.location.LocationManager as AndroidLocationManager
+import android.provider.Settings
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
@@ -406,6 +408,31 @@ class MainActivity : AppCompatActivity() {
         }
         
         Log.d(TAG, "用户点击刷新天气（带播报）")
+        
+        // 检查定位服务是否开启
+        if (!isLocationServiceEnabled()) {
+            showLocationServiceDialog()
+            return
+        }
+        
+        // 检查位置权限
+        val fineLocationPermission = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        val coarseLocationPermission = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        
+        val locationGranted = fineLocationPermission == PackageManager.PERMISSION_GRANTED ||
+            coarseLocationPermission == PackageManager.PERMISSION_GRANTED
+        
+        if (!locationGranted) {
+            requestPermissions()
+            return
+        }
+        
         isRefreshing = true
         startRefreshAnimation()
         
@@ -414,6 +441,31 @@ class MainActivity : AppCompatActivity() {
         } else {
             fetchWeather(currentCity, true)
         }
+    }
+    
+    private fun isLocationServiceEnabled(): Boolean {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as AndroidLocationManager
+        return locationManager.isProviderEnabled(AndroidLocationManager.GPS_PROVIDER) ||
+            locationManager.isProviderEnabled(AndroidLocationManager.NETWORK_PROVIDER)
+    }
+    
+    private fun showLocationServiceDialog() {
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setTitle("定位服务未开启")
+        builder.setMessage("刷新天气需要开启定位服务，请前往设置开启。")
+        
+        builder.setPositiveButton("前往设置") { dialog, which ->
+            val intent = Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+            startActivity(intent)
+            dialog.dismiss()
+        }
+        
+        builder.setNegativeButton("取消") { dialog, which ->
+            dialog.dismiss()
+        }
+        
+        builder.setCancelable(false)
+        builder.show()
     }
 
     private fun refreshWeather() {
@@ -660,9 +712,24 @@ class MainActivity : AppCompatActivity() {
             return
         }
         
+        // 检查设置中是否开启了天气播报
+        val prefs = getSharedPreferences("OnePassPrefs", Context.MODE_PRIVATE)
+        val weatherEnabled = prefs.getBoolean("weather_enabled", false)
+        if (!weatherEnabled) {
+            return
+        }
+        
         val speechText = "今天是$lunarDateText，${weather.city}的天气是${weather.weather}，气温${weather.temperature}摄氏度，湿度${weather.humidity}%，风力${weather.windpower}级，风向${weather.winddirection}"
 
-        textToSpeech.speak(speechText, TextToSpeech.QUEUE_FLUSH, null, null)
+        // 按照设置的声音比例播报（相对音量）
+        val weatherVolume = prefs.getInt("weather_volume", 50)
+        val volumeScale = weatherVolume / 100.0f
+        
+        // 使用Bundle设置音量参数
+        val params = android.os.Bundle()
+        params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volumeScale)
+
+        textToSpeech.speak(speechText, TextToSpeech.QUEUE_FLUSH, params, null)
     }
 
     private fun showError() {
