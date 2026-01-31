@@ -260,6 +260,10 @@ class CommonAppsActivity : AppCompatActivity() {
             private val label: android.widget.TextView = itemView.findViewById(R.id.appLabel)
             private val check: android.widget.Switch = itemView.findViewById(R.id.appSelected)
             fun bind(app: AppInfo) {
+                // 关键步骤1: 必须先移除之前的监听器！
+                check.setOnCheckedChangeListener(null)
+                
+                // 关键步骤2: 从数据模型中读取状态并设置给UI
                 icon.setImageDrawable(app.icon)
                 label.text = app.label
                 check.isChecked = app.selected
@@ -306,6 +310,8 @@ class CommonAppsActivity : AppCompatActivity() {
                         Log.d(TAG, "应用点击: ${app.label}, 选中状态: true")
                     }
                 }
+                
+                // 关键步骤3: 重新设置监听器，同步用户操作到数据模型
                 check.setOnCheckedChangeListener { _, isChecked -> 
                     if (isChecked) {
                         // 检查是否超过最大选择数量
