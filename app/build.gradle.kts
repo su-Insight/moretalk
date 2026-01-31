@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.onepass"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"

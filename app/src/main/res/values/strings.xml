@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">OnePass</string>
+    <string name="accessibility_service_description">帮助自动拨打微信视频和语音通话</string>
 </resources>

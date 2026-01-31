@@ -813,12 +813,17 @@ class MainActivity : AppCompatActivity() {
         
         contactName.text = contact.wechatNote.ifEmpty { contact.name }
         
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setView(dialogView)
+        builder.setCancelable(true)
+        val dialog = builder.create()
+        
         // 根据联系人功能显示对应按钮
         if (contact.hasWechatVideo) {
             rowWechatVideo.visibility = View.VISIBLE
             btnWechatVideo.setOnClickListener {
                 openWechatVideo(contact)
-                (it.parent as android.app.Dialog).dismiss()
+                dialog.dismiss()
             }
             btnPlayWechatVideo.setOnClickListener {
                 speakText("给${contact.wechatNote.ifEmpty { contact.name }}拨打微信视频")
@@ -829,7 +834,7 @@ class MainActivity : AppCompatActivity() {
             rowWechatVoice.visibility = View.VISIBLE
             btnWechatVoice.setOnClickListener {
                 openWechatVoice(contact)
-                (it.parent as android.app.Dialog).dismiss()
+                dialog.dismiss()
             }
             btnPlayWechatVoice.setOnClickListener {
                 speakText("给${contact.wechatNote.ifEmpty { contact.name }}拨打微信语音")
@@ -840,17 +845,13 @@ class MainActivity : AppCompatActivity() {
             rowPhoneCall.visibility = View.VISIBLE
             btnPhoneCall.setOnClickListener {
                 makePhoneCall(contact)
-                (it.parent as android.app.Dialog).dismiss()
+                dialog.dismiss()
             }
             btnPlayPhoneCall.setOnClickListener {
                 speakText("给${contact.wechatNote.ifEmpty { contact.name }}拨打电话")
             }
         }
         
-        val builder = android.app.AlertDialog.Builder(this)
-        builder.setView(dialogView)
-        builder.setCancelable(true)
-        val dialog = builder.create()
         dialog.show()
     }
     
@@ -879,12 +880,63 @@ class MainActivity : AppCompatActivity() {
     
     private fun openWechatVideo(contact: Contact) {
         Log.d(TAG, "发起微信视频通话: ${contact.wechatNote}")
+        
+        if (contact.wechatNote.isEmpty()) {
+            Toast.makeText(this, "微信备注为空，无法打开微信", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        val isEnabled = isAccessibilityServiceEnabled()
+        Log.d(TAG, "无障碍服务是否启用: $isEnabled")
+        
+        if (!isEnabled) {
+            showAccessibilityServiceDialog()
+            return
+        }
+        
+        try {
+            val intent = packageManager.getLaunchIntentForPackage("com.tencent.mm")
+            Log.d(TAG, "微信启动Intent: $intent")
+            
+            if (intent != null) {
+                WeChatData.updateValue(contact.wechatNote)
+                WeChatData.updateVideo(true)
+                WeChatData.updateIndex(1)
+                Log.d(TAG, "设置微信数据 - 昵称: ${contact.wechatNote}, 视频: true, 索引: 1")
+                
+                startActivity(intent)
+                Toast.makeText(this, "正在发起微信视频通话", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "未安装微信", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "打开微信失败", e)
+            Toast.makeText(this, "打开微信失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun openWechatVoice(contact: Contact) {
+        Log.d(TAG, "发起微信语音通话: ${contact.wechatNote}")
+        
+        if (contact.wechatNote.isEmpty()) {
+            Toast.makeText(this, "微信备注为空，无法打开微信", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        if (!isAccessibilityServiceEnabled()) {
+            showAccessibilityServiceDialog()
+            return
+        }
+        
         try {
             val intent = packageManager.getLaunchIntentForPackage("com.tencent.mm")
             if (intent != null) {
-                intent.action = Intent.ACTION_VIEW
-                intent.data = android.net.Uri.parse("weixin://")
+                WeChatData.updateValue(contact.wechatNote)
+                WeChatData.updateVideo(false)
+                WeChatData.updateIndex(1)
                 startActivity(intent)
+                
+                Toast.makeText(this, "正在发起微信语音通话", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "未安装微信", Toast.LENGTH_SHORT).show()
             }
@@ -894,21 +946,30 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun openWechatVoice(contact: Contact) {
-        Log.d(TAG, "发起微信语音通话: ${contact.wechatNote}")
-        try {
-            val intent = packageManager.getLaunchIntentForPackage("com.tencent.mm")
-            if (intent != null) {
-                intent.action = Intent.ACTION_VIEW
-                intent.data = android.net.Uri.parse("weixin://")
-                startActivity(intent)
-            } else {
-                Toast.makeText(this, "未安装微信", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "打开微信失败", e)
-            Toast.makeText(this, "打开微信失败", Toast.LENGTH_SHORT).show()
+    private fun isAccessibilityServiceEnabled(): Boolean {
+        val serviceName = "com.example.onepass/com.example.onepass.WechatAccessibilityService"
+        val enabledServices = android.provider.Settings.Secure.getString(
+            contentResolver,
+            android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        )
+        Log.d(TAG, "已启用的无障碍服务: $enabledServices")
+        Log.d(TAG, "查找的服务名: $serviceName")
+        val result = enabledServices?.contains(serviceName) == true
+        Log.d(TAG, "检查结果: $result")
+        return result
+    }
+    
+    private fun showAccessibilityServiceDialog() {
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setTitle("需要开启无障碍服务")
+        builder.setMessage("为了自动拨打微信视频/语音通话，需要开启无障碍服务。是否现在前往设置？")
+        builder.setPositiveButton("前往设置") { _, _ ->
+            val intent = Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent)
         }
+        builder.setNegativeButton("取消", null)
+        builder.show()
     }
     
     private fun makePhoneCall(contact: Contact) {

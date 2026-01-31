@@ -24,13 +24,31 @@
   
   <uses-feature android:name="android.hardware.camera" android:required="false" />
   <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+  
+  <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+  
   <application
-      android:allowBackup="true"
-      android:icon="@mipmap/ic_launcher"
-      android:label="@string/app_name"
-      android:roundIcon="@mipmap/ic_launcher_round"
-      android:supportsRtl="true"
-      android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+    
+    <service
+        android:name=".WechatAccessibilityService"
+        android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+        android:label="微信无障碍服务"
+        android:description="@string/accessibility_service_description"
+        android:exported="false">
+      <intent-filter>
+        <action android:name="android.accessibilityservice.AccessibilityService" />
+      </intent-filter>
+      <meta-data
+          android:name="android.accessibilityservice"
+          android:resource="@xml/accessibility_service_config" />
+    </service>
+    
     <provider
         android:name="androidx.core.content.FileProvider"
         android:authorities="com.example.onepass.fileprovider"
