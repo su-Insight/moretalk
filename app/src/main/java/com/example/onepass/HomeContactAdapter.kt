@@ -1,5 +1,7 @@
 package com.example.onepass
 
+import android.view.ViewOutlineProvider
+import android.graphics.Outline
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -37,6 +39,14 @@ class HomeContactAdapter(private val contacts: List<Contact>, private val listen
         layoutParams.width = scaledImageSize
         layoutParams.height = scaledImageSize
         holder.contactImage.layoutParams = layoutParams
+        
+        // 设置头像为圆角矩形
+        holder.contactImage.clipToOutline = true
+        holder.contactImage.outlineProvider = object : ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: Outline) {
+                outline.setRoundRect(0, 0, view.width, view.height, 16f)
+            }
+        }
         
         // 根据缩放比例调整字体大小
         val originalTextSize = 26f // 当前最大尺寸46.2sp * 70%

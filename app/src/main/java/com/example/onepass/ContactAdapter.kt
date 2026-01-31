@@ -1,5 +1,7 @@
 package com.example.onepass
 
+import android.view.ViewOutlineProvider
+import android.graphics.Outline
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -41,6 +43,14 @@ class ContactAdapter(private val contacts: List<Contact>, private val listener: 
             }
         } else {
             holder.contactImage.setImageResource(android.R.drawable.ic_menu_myplaces)
+        }
+        
+        // 设置头像为圆角矩形
+        holder.contactImage.clipToOutline = true
+        holder.contactImage.outlineProvider = object : ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: Outline) {
+                outline.setRoundRect(0, 0, view.width, view.height, 16f)
+            }
         }
         
         // 设置联系人名称
