@@ -107,34 +107,43 @@ class CommonAppsActivity : AppCompatActivity() {
         }
         
         try {
-            val applicationInfos = packageManager.getInstalledApplications(0)
-            Log.d(TAG, "扫描到应用总数: ${applicationInfos.size}")
+            // 创建一个意图，目标是所有"入口"Activity
+            val intent = android.content.Intent(android.content.Intent.ACTION_MAIN, null)
+            intent.addCategory(android.content.Intent.CATEGORY_LAUNCHER)
+            
+            // 使用 queryIntentActivities 获取应用列表
+            val resolveInfos = packageManager.queryIntentActivities(intent, 0)
+            Log.d(TAG, "扫描到应用总数: ${resolveInfos.size}")
+            
+            if (resolveInfos.isEmpty()) {
+                Log.e(TAG, "应用列表为空！")
+                Toast.makeText(this, "无法获取应用列表", Toast.LENGTH_LONG).show()
+                return
+            }
             
             var currentOrder = 0
-            for (applicationInfo in applicationInfos) {
-                val packageName = applicationInfo.packageName
+            val processedPackages = mutableSetOf<String>()
+            
+            for (resolveInfo in resolveInfos) {
+                val packageName = resolveInfo.activityInfo.packageName
                 
-                if (!shouldIncludeApp(packageName, applicationInfo, packageManager)) {
+                // 跳过已处理的应用（避免重复）
+                if (processedPackages.contains(packageName)) {
+                    continue
+                }
+                processedPackages.add(packageName)
+                
+                // 排除当前应用本身
+                if (packageName == this.packageName) {
+                    Log.d(TAG, "跳过当前应用: $packageName")
                     continue
                 }
                 
                 Log.d(TAG, "处理应用: $packageName")
                 
                 try {
-                    val appName = applicationInfo.loadLabel(packageManager).toString()
-                    val icon = applicationInfo.loadIcon(packageManager)
-                    
-                    // 检查是否为默认图标
-                    if (hasDefaultIcon(packageName, packageManager)) {
-                        Log.d(TAG, "  -> 跳过默认图标应用: $appName")
-                        continue
-                    }
-                    
-                    // 检查应用名是否为 XX.XX.XX 格式
-                    if (isPackageNameFormatApp(appName)) {
-                        Log.d(TAG, "  -> 跳过包名格式应用: $appName")
-                        continue
-                    }
+                    val appName = resolveInfo.loadLabel(packageManager).toString()
+                    val icon = resolveInfo.loadIcon(packageManager)
                     
                     // 检查是否已在保存的列表中
                     val isSelected = savedApps.contains(packageName)
@@ -150,7 +159,13 @@ class CommonAppsActivity : AppCompatActivity() {
                 }
             }
             
-            Log.d(TAG, "应用扫描完成，共添加 ${apps.size} 个应用")
+            Log.d(TAG, "应用扫描完成，添加: ${apps.size}")
+            
+            if (apps.isEmpty()) {
+                Log.e(TAG, "没有添加任何应用！")
+                Toast.makeText(this, "没有找到可用的应用", Toast.LENGTH_LONG).show()
+            }
+            
             // 先按选中状态排序，再按排序值排序，最后按名称排序
             apps.sortWith(Comparator {
                     app1, app2 ->
@@ -165,181 +180,13 @@ class CommonAppsActivity : AppCompatActivity() {
                 }
             })
             Log.d(TAG, "应用列表已排序")
+        } catch (e: SecurityException) {
+            Log.e(TAG, "权限不足，无法获取应用列表", e)
+            Toast.makeText(this, "权限不足，无法获取应用列表", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             Log.e(TAG, "加载应用列表时出错: ${e.message}", e)
+            Toast.makeText(this, "加载应用列表时出错: ${e.message}", Toast.LENGTH_LONG).show()
         }
-    }
-
-    private fun shouldIncludeApp(packageName: String, applicationInfo: ApplicationInfo, packageManager: PackageManager): Boolean {
-        val isSystemApp = (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-        
-        if (isExcludedSystemApp(packageName)) {
-            return false
-        }
-        
-        if (!isSystemApp) {
-            return true
-        }
-        
-        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-        if (launchIntent != null) {
-            return true
-        }
-        
-        return isImportantSystemApp(packageName) || isUsefulSystemApp(packageName) || isUserVisibleApp(packageName, applicationInfo, packageManager)
-    }
-
-    private fun isExcludedSystemApp(packageName: String): Boolean {
-        val excludedApps = listOf(
-            "android",
-            "com.android.shell",
-            "com.android.sharedstoragebackup",
-            "com.android.printspooler",
-            "com.android.externalstorage",
-            "com.android.providers.partnerbookmarks",
-            "com.android.proxyhandler",
-            "com.android.fallback",
-            "com.android.managedprovisioning",
-            "com.android.defcontainer",
-            "com.android.backupconfirm",
-            "com.android.keychain",
-            "com.android.pacprocessor",
-            "com.android.statementservice",
-            "com.android.server.telecom",
-            "com.android.cts",
-            "com.android.development",
-            "com.android.smoketest",
-            "com.android.test",
-            "com.android.emulator",
-            "com.android.systemui.tests",
-            "com.android.companiondevicemanager",
-            "com.android.bips",
-            "com.android.bluetoothmidiservice",
-            "com.android.bookmarkprovider",
-            "com.android.calllogbackup",
-            "com.android.captiveportallogin",
-            "com.android.cellbroadcastreceiver",
-            "com.android.certinstaller",
-            "com.android.companiondevicemanager",
-            "com.android.dreams.basic",
-            "com.android.dreams.phototable",
-            "com.android.emergency",
-            "com.android.htmlviewer",
-            "com.android.inputdevices",
-            "com.android.location.fused",
-            "com.android.managedprovisioning",
-            "com.android.nfc",
-            "com.android.onetimeinitializer",
-            "com.android.providers.userdictionary",
-            "com.android.vpndialogs",
-            "com.android.wallpaperbackup",
-            "com.android.webview"
-        )
-        return excludedApps.any { excluded -> packageName == excluded || packageName.startsWith("$excluded.") }
-    }
-
-    private fun isImportantSystemApp(packageName: String): Boolean {
-        val importantSystemApps = listOf(
-            "com.android.phone",
-            "com.android.dialer",
-            "com.android.contacts",
-            "com.android.messaging",
-            "com.android.mms",
-            "com.android.camera",
-            "com.android.camera2",
-            "com.google.android.GoogleCamera",
-            "com.android.gallery",
-            "com.android.music",
-            "com.android.calculator2",
-            "com.android.calendar",
-            "com.android.deskclock",
-            "com.android.settings",
-            "com.android.documentsui",
-            "com.android.browser",
-            "com.google.android.chrome",
-            "com.android.soundrecorder",
-            "com.google.android.apps.maps",
-            "com.autonavi.minimap",
-            "com.baidu.BaiduMap",
-            "com.android.email",
-            "com.google.android.gm",
-            "com.google.android.apps.weather",
-            "com.miui.weather",
-            "com.huawei.weather",
-            "com.google.android.keep",
-            "com.miui.notes",
-            "com.huawei.notepad",
-            "com.google.android.apps.fitness",
-            "com.huawei.health",
-            "com.xiaomi.wearable",
-            "com.android.vending",
-            "com.google.android.gms",
-            "com.google.android.gsf",
-            "com.android.systemui"
-        )
-        return importantSystemApps.contains(packageName)
-    }
-
-    private fun isUsefulSystemApp(packageName: String): Boolean {
-        val usefulSystemApps = listOf(
-            "com.android.settings",
-            "com.android.systemui",
-            "com.android.providers.settings",
-            "com.android.packageinstaller",
-            "com.android.providers.media",
-            "com.android.providers.downloads",
-            "com.android.providers.contacts",
-            "com.android.providers.telephony",
-            "com.android.inputmethod.latin",
-            "com.sohu.inputmethod.sogou",
-            "com.baidu.input",
-            "com.android.vending",
-            "com.huawei.appmarket",
-            "com.xiaomi.market",
-            "com.bbk.appstore",
-            "com.oppo.market",
-            "com.android.browser",
-            "com.chrome.beta",
-            "com.chrome.dev",
-            "com.chrome.canary",
-            "com.google.android.chrome",
-            "com.google.android.apps.docs",
-            "com.google.android.apps.sheets",
-            "com.google.android.apps.slides",
-            "com.google.android.gms",
-            "com.google.android.gsf",
-            "com.android.wallpapercropper",
-            "com.android.wallpaper.livepicker"
-        )
-        return usefulSystemApps.contains(packageName)
-    }
-
-    private fun isUserVisibleApp(packageName: String, applicationInfo: ApplicationInfo, packageManager: PackageManager): Boolean {
-        return try {
-            val appName = applicationInfo.loadLabel(packageManager).toString()
-            val icon = applicationInfo.loadIcon(packageManager)
-            appName.isNotBlank() && appName != packageName && icon != null && 
-            !packageName.contains("test") && !packageName.contains("stub") && 
-            !packageName.endsWith(".provider") && !packageName.endsWith(".service")
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    private fun hasDefaultIcon(packageName: String, packageManager: PackageManager): Boolean {
-        return try {
-            val packageInfo = packageManager.getPackageInfo(packageName, 0)
-            // 检查应用的icon资源是否为0，如果是0则表示使用默认图标
-            packageInfo.applicationInfo?.icon == 0
-        } catch (e: Exception) {
-            // 如果获取包信息失败，默认认为不是默认图标
-            false
-        }
-    }
-
-    private fun isPackageNameFormatApp(appName: String): Boolean {
-        // 检查应用名是否符合 XX.XX.XX 格式（包含至少两个点）
-        return appName.count { it == '.' } >= 2
     }
 
     private fun parseAppOrders(ordersString: String): Map<String, Int> {

@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import android.view.View
 import android.widget.ImageView
@@ -108,12 +109,25 @@ class MainActivity : AppCompatActivity() {
     ) { permissions ->
         val fineLocation = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
         val coarseLocation = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        val camera = permissions[Manifest.permission.CAMERA] ?: false
+        val readStorage = permissions[Manifest.permission.READ_EXTERNAL_STORAGE] ?: false
+        val writeStorage = permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] ?: false
+        val callPhone = permissions[Manifest.permission.CALL_PHONE] ?: false
         
         if (fineLocation || coarseLocation) {
             getLocationAndFetchWeather()
         } else {
             fetchWeather(currentCity)
         }
+        
+        Log.d(TAG, "权限请求结果 - 位置: ${fineLocation || coarseLocation}, 相机: $camera, 存储: ${readStorage || writeStorage}, 电话: $callPhone")
+        
+        // 权限请求完成后，延迟初始化TextToSpeech
+        handler.postDelayed({
+            if (!isTextToSpeechInitialized) {
+                initTextToSpeech()
+            }
+        }, 500)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -128,7 +142,8 @@ class MainActivity : AppCompatActivity() {
 
         locationManager = LocationManager(this)
         
-        initTextToSpeech()
+        // 不在这里初始化TextToSpeech，而是在权限请求完成后初始化
+        // initTextToSpeech()
         initViews()
         updateDate()
         checkLocationPermissionAndFetchWeather()
@@ -154,11 +169,72 @@ class MainActivity : AppCompatActivity() {
 
     private fun initTextToSpeech() {
         textToSpeech = TextToSpeech(this) { status ->
+            Log.d(TAG, "TextToSpeech初始化状态: $status")
             if (status == TextToSpeech.SUCCESS) {
-                textToSpeech.language = Locale.CHINA
-                isTextToSpeechInitialized = true
+                val result = textToSpeech.setLanguage(Locale.CHINA)
+                Log.d(TAG, "设置中文语言结果: $result")
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Log.e(TAG, "不支持中文语音")
+                    showTTSErrorDialog()
+                } else {
+                    isTextToSpeechInitialized = true
+                    Log.d(TAG, "语音播报初始化成功")
+                    
+                    // 设置语音参数
+                    textToSpeech.setSpeechRate(1.0f)
+                    textToSpeech.setPitch(1.0f)
+                    
+                    // 设置播报监听器
+                    textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String?) {
+                            Log.d(TAG, "语音播报开始: $utteranceId")
+                        }
+                        
+                        override fun onDone(utteranceId: String?) {
+                            Log.d(TAG, "语音播报完成: $utteranceId")
+                        }
+                        
+                        override fun onError(utteranceId: String?) {
+                            Log.e(TAG, "语音播报错误: $utteranceId")
+                        }
+                        
+                        override fun onStop(utteranceId: String?, interrupted: Boolean) {
+                            Log.d(TAG, "语音播报停止: $utteranceId, 中断: $interrupted")
+                        }
+                    })
+                }
+            } else {
+                Log.e(TAG, "语音播报初始化失败: $status")
+                showTTSErrorDialog()
             }
         }
+    }
+    
+    private fun showTTSErrorDialog() {
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setTitle("语音播报不可用")
+        builder.setMessage("您的设备没有安装语音播报引擎或不支持中文语音播报。")
+        
+        builder.setPositiveButton("安装语音引擎") { dialog, which ->
+            // 跳转到Google Play商店搜索TTS应用
+            try {
+                val intent = Intent(Intent.ACTION_VIEW)
+                intent.data = android.net.Uri.parse("market://search?q=Text+to+Speech&c=apps")
+                startActivity(intent)
+            } catch (e: Exception) {
+                // 如果没有Google Play，跳转到系统设置
+                val settingsIntent = Intent("com.android.settings.TTS_SETTINGS")
+                startActivity(settingsIntent)
+            }
+            dialog.dismiss()
+        }
+        
+        builder.setNegativeButton("稍后") { dialog, which ->
+            dialog.dismiss()
+        }
+        
+        builder.setCancelable(false)
+        builder.show()
     }
 
     private fun initViews() {
@@ -261,9 +337,32 @@ class MainActivity : AppCompatActivity() {
             this,
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
-
-        if (fineLocationPermission == PackageManager.PERMISSION_GRANTED ||
-            coarseLocationPermission == PackageManager.PERMISSION_GRANTED) {
+        val cameraPermission = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.CAMERA
+        )
+        val readStoragePermission = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        )
+        val writeStoragePermission = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+        val callPhonePermission = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.CALL_PHONE
+        )
+        
+        val locationGranted = fineLocationPermission == PackageManager.PERMISSION_GRANTED ||
+            coarseLocationPermission == PackageManager.PERMISSION_GRANTED
+        
+        val otherPermissionsGranted = cameraPermission == PackageManager.PERMISSION_GRANTED &&
+            readStoragePermission == PackageManager.PERMISSION_GRANTED &&
+            writeStoragePermission == PackageManager.PERMISSION_GRANTED &&
+            callPhonePermission == PackageManager.PERMISSION_GRANTED
+        
+        if (locationGranted && otherPermissionsGranted) {
             getLocationAndFetchWeather()
         } else {
             requestPermissions()
@@ -274,7 +373,11 @@ class MainActivity : AppCompatActivity() {
         requestPermissionLauncher.launch(
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.CAMERA,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.CALL_PHONE
             )
         )
     }
@@ -398,11 +501,36 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateWeatherUI(weather: LiveWeather) {
-        weatherText.text = weather.weather
+        val weatherEmoji = getWeatherEmoji(weather.weather)
+        weatherText.text = "$weatherEmoji ${weather.weather}"
         temperatureText.text = "${weather.temperature}°C"
         weatherDetailText.text = "湿度: ${weather.humidity}% | 风力: ${weather.windpower} | 风向: ${weather.winddirection}"
         
         locationText.text = weather.city
+    }
+
+    private fun getWeatherEmoji(weather: String): String {
+        return when {
+            weather.contains("晴") -> "☀️"
+            weather.contains("多云") -> "⛅"
+            weather.contains("阴") -> "☁️"
+            weather.contains("暴雨") -> "⛈️"
+            weather.contains("雷阵雨") -> "⛈️"
+            weather.contains("大雨") -> "�️"
+            weather.contains("中雨") -> "�️"
+            weather.contains("小雨") -> "🌦️"
+            weather.contains("雨") -> "🌧️"
+            weather.contains("大雪") -> "❄️"
+            weather.contains("中雪") -> "🌨️"
+            weather.contains("小雪") -> "🌨️"
+            weather.contains("雪") -> "❄️"
+            weather.contains("雷") -> "⛈️"
+            weather.contains("雾") -> "🌫️"
+            weather.contains("霾") -> "😷"
+            weather.contains("风") -> "🌬️"
+            weather.contains("冰雹") -> "🌨️"
+            else -> "🌤️"
+        }
     }
 
     private fun speakWeather(weather: LiveWeather) {
@@ -615,8 +743,22 @@ class MainActivity : AppCompatActivity() {
     
     private fun speakText(text: String) {
         Log.d(TAG, "播报语音: $text")
+        Log.d(TAG, "语音播报是否初始化: $isTextToSpeechInitialized")
+        
         if (isTextToSpeechInitialized) {
-            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+            try {
+                // 尝试不同的播报方式
+                val result = textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+                Log.d(TAG, "播报结果: $result")
+                
+                // 添加延迟，确保播报完成
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    Log.d(TAG, "播报延迟检查")
+                }, 100)
+            } catch (e: Exception) {
+                Log.e(TAG, "播报失败", e)
+                Toast.makeText(this, "语音播报失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         } else {
             Toast.makeText(this, "语音播报未初始化", Toast.LENGTH_SHORT).show()
         }

@@ -3,15 +3,16 @@ package com.example.onepass.location
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.os.Bundle
+import android.util.Log
 import androidx.core.content.ContextCompat
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
-import com.google.android.gms.tasks.CancellationTokenSource
 
 class LocationManager(private val context: Context) {
-    private val fusedLocationClient: FusedLocationProviderClient = 
-        LocationServices.getFusedLocationProviderClient(context)
+    private val locationManager: LocationManager = 
+        context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
     fun getCurrentLocation(onResult: (String?) -> Unit) {
         if (!hasLocationPermission()) {
@@ -20,21 +21,42 @@ class LocationManager(private val context: Context) {
         }
 
         try {
-            val cancellationTokenSource = CancellationTokenSource()
-            fusedLocationClient.getCurrentLocation(
-                Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-                cancellationTokenSource.token
-            ).addOnSuccessListener { location ->
-                if (location != null) {
+            val locationListener = object : LocationListener {
+                override fun onLocationChanged(location: Location) {
+                    Log.i("WeatherAPI", "主动定位成功: ${location.latitude}, ${location.longitude}")
                     val city = getCityFromCoordinates(location.latitude, location.longitude)
                     onResult(city)
-                } else {
-                    onResult(null)
+                    
+                    locationManager.removeUpdates(this)
                 }
-            }.addOnFailureListener {
-                onResult(null)
+
+                override fun onProviderEnabled(provider: String) {
+                    Log.d("WeatherAPI", "位置提供者已启用: $provider")
+                }
+
+                override fun onProviderDisabled(provider: String) {
+                    Log.d("WeatherAPI", "位置提供者已禁用: $provider")
+                }
+
+                @Deprecated("Deprecated in Java")
+                override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
+                    Log.d("WeatherAPI", "位置提供者状态改变: $provider, status: $status")
+                }
             }
+
+            locationManager.requestLocationUpdates(
+                LocationManager.NETWORK_PROVIDER,
+                0,
+                0f,
+                locationListener
+            )
+            
+            Log.d("WeatherAPI", "开始请求位置更新")
+        } catch (e: SecurityException) {
+            Log.e("WeatherAPI", "位置权限不足", e)
+            onResult(null)
         } catch (e: Exception) {
+            Log.e("WeatherAPI", "获取位置失败", e)
             onResult(null)
         }
     }
