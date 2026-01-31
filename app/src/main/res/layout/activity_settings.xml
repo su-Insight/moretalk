@@ -115,7 +115,7 @@
                         android:id="@+id/radioSolar"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="公历" />
+                        android:text="阳历" />
                 </RadioGroup>
 
             </androidx.constraintlayout.widget.ConstraintLayout>

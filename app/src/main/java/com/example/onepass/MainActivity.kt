@@ -54,7 +54,9 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "WeatherAPI"
     }
+    private lateinit var dateTypeText: TextView
     private lateinit var dateText: TextView
+    private lateinit var weekText: TextView
     private lateinit var weatherText: TextView
     private lateinit var temperatureText: TextView
     private lateinit var weatherDetailText: TextView
@@ -352,7 +354,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun initViews() {
         val weatherComponent = findViewById<View>(R.id.weatherCalendarComponent)
+        dateTypeText = weatherComponent.findViewById(R.id.dateTypeText)
         dateText = weatherComponent.findViewById(R.id.dateText)
+        weekText = weatherComponent.findViewById(R.id.weekText)
         weatherText = weatherComponent.findViewById(R.id.weatherText)
         temperatureText = weatherComponent.findViewById(R.id.temperatureText)
         weatherDetailText = weatherComponent.findViewById(R.id.weatherDetailText)
@@ -429,15 +433,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startRefreshAnimation() {
-        val animator = ObjectAnimator.ofFloat(weatherCard, "rotationY", 0f, 360f)
-        animator.duration = 1000
+        val animator = ObjectAnimator.ofFloat(weatherCard, "translationX", 0f, -10f, 10f, -10f, 10f, 0f)
+        animator.duration = 500
         animator.start()
         
         weatherCard.tag = animator
     }
 
     private fun stopRefreshAnimation() {
-        weatherCard.rotationY = 0f
+        weatherCard.translationX = 0f
         isRefreshing = false
     }
 
@@ -533,11 +537,15 @@ class MainActivity : AppCompatActivity() {
             val solar = Solar.fromYmd(year, month, day)
             val lunar = solar.lunar
             val lunarDate = "${lunar.getYearInChinese()}年${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}"
-            dateText.text = "农历${lunarDate} $weekDay"
+            dateTypeText.text = "农历"
+            dateText.text = lunarDate
+            weekText.text = weekDay
             lunarDateText = "农历${lunarDate}"
         } else {
-            dateText.text = "公历${year}年${month}月${day}日 $weekDay"
-            lunarDateText = "公历${year}年${month}月${day}日"
+            dateTypeText.text = "阳历"
+            dateText.text = "${year}年${month}月${day}日"
+            weekText.text = weekDay
+            lunarDateText = "阳历${year}年${month}月${day}日"
         }
     }
 

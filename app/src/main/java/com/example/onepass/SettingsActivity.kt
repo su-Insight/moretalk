@@ -123,7 +123,7 @@ class SettingsActivity : AppCompatActivity() {
             val editor = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
             editor.putString(KEY_DATE_STYLE, if (isLunar) VALUE_LUNAR else VALUE_SOLAR)
             editor.apply()
-            Toast.makeText(this, if (isLunar) "已选择农历" else "已选择公历", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, if (isLunar) "已选择农历" else "已选择阳历", Toast.LENGTH_SHORT).show()
         }
 
         seekBarIconSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {

@@ -11,7 +11,10 @@
         android:id="@+id/weatherCalendarComponent"
         layout="@layout/weather_calendar_component"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp" />
 
     <!-- 常用应用区域 -->
     <androidx.cardview.widget.CardView
