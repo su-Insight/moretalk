@@ -314,6 +314,7 @@
                     android:layout_width="80dp"
                     android:layout_height="48dp"
                     android:layout_marginStart="8dp"
+                    android:layout_marginTop="-5dp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="@id/textWeatherTitle" />
 

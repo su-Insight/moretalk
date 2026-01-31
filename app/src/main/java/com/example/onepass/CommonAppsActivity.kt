@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.onepass.GlobalScaleManager
 
 data class AppInfo(val label: String, val packageName: String, val icon: Drawable, var selected: Boolean, val order: Int = 0)
 
@@ -24,7 +25,8 @@ class CommonAppsActivity : AppCompatActivity() {
         private const val MAX_COMMON_APPS = 6
     }
     
-    private lateinit var searchEdit: SearchView
+    private lateinit var searchEdit: android.widget.EditText
+    private lateinit var searchEmoji: android.widget.TextView
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: AppAdapter
     private val apps = mutableListOf<AppInfo>()
@@ -39,21 +41,19 @@ class CommonAppsActivity : AppCompatActivity() {
         
         val packageManager = packageManager
         searchEdit = findViewById(R.id.editSearch)
+        searchEmoji = findViewById(R.id.searchEmoji)
         recyclerView = findViewById(R.id.recyclerViewApps)
         recyclerView.layoutManager = LinearLayoutManager(this)
         
-        // 为搜索栏添加点击事件，确保点击任何位置都能激活输入
+        // 为搜索框添加点击事件，确保点击任何位置都能激活输入
         searchEdit.setOnClickListener {
-            searchEdit.isIconified = false
             searchEdit.requestFocus()
             val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             inputMethodManager.showSoftInput(searchEdit, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
         }
         
-        // 为搜索栏的输入框添加点击事件
-        val searchPlate = searchEdit.findViewById<android.view.View>(androidx.appcompat.R.id.search_plate)
-        searchPlate?.setOnClickListener {
-            searchEdit.isIconified = false
+        // 为emoji标签添加点击事件
+        searchEmoji.setOnClickListener {
             searchEdit.requestFocus()
             val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             inputMethodManager.showSoftInput(searchEdit, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
@@ -63,18 +63,22 @@ class CommonAppsActivity : AppCompatActivity() {
         adapter = AppAdapter(apps)
         recyclerView.adapter = adapter
         
-        searchEdit.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                return false
-            }
-            override fun onQueryTextChange(newText: String?): Boolean {
-                val q = (newText ?: "").trim().lowercase()
+        searchEdit.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val q = (s ?: "").trim().toString().lowercase()
                 adapter.filter(q)
-                return true
             }
+            override fun afterTextChanged(s: android.text.Editable?) {}
         })
         
-        findViewById<Button>(R.id.btnDone).setOnClickListener {
+        val btnDone = findViewById<Button>(R.id.btnDone)
+        // 根据缩放比例调整按钮字体大小
+        val originalButtonTextSize = 28f // 原始大小18sp，缩小50%
+        val scaledButtonTextSize = GlobalScaleManager.getScaledValue(this, originalButtonTextSize)
+        btnDone.textSize = scaledButtonTextSize
+        
+        btnDone.setOnClickListener {
             Log.d(TAG, "完成按钮被点击")
             
             // 保存选中的应用
@@ -259,6 +263,19 @@ class CommonAppsActivity : AppCompatActivity() {
                 icon.setImageDrawable(app.icon)
                 label.text = app.label
                 check.isChecked = app.selected
+                
+                // 根据缩放比例调整图标大小
+                val originalIconSize = 150 // 原始大小64dp * 2
+                val scaledIconSize = GlobalScaleManager.getScaledValue(itemView.context, originalIconSize)
+                val iconParams = icon.layoutParams
+                iconParams.width = scaledIconSize
+                iconParams.height = scaledIconSize
+                icon.layoutParams = iconParams
+                
+                // 根据缩放比例调整字体大小
+                val originalTextSize = 28f // 原始大小18sp * 2
+                val scaledTextSize = GlobalScaleManager.getScaledValue(itemView.context, originalTextSize)
+                label.textSize = scaledTextSize
                 
                 // 设置已启用应用的背景色
                 if (app.selected) {

@@ -34,6 +34,13 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var commonAppsContainer: android.widget.LinearLayout
     private lateinit var textNoCommonApps: TextView
     private lateinit var btnContacts: Button
+    
+    // 标签文本控件
+    private lateinit var textDateStyle: TextView
+    private lateinit var textCommonAppsTitle: TextView
+    private lateinit var textContactsTitle: TextView
+    private lateinit var textIconSizeTitle: TextView
+    private lateinit var textWeatherTitle: TextView
 
     private var isLoggedIn = false
     private val PREFS_NAME = "OnePassPrefs"
@@ -62,6 +69,10 @@ class SettingsActivity : AppCompatActivity() {
         val commonAppsSet = getSharedPreferences(COMMON_APPS_PREFS, Context.MODE_PRIVATE)
             .getStringSet(KEY_COMMON_APPS, HashSet<String>())
         loadCommonApps(commonAppsSet)
+        
+        // 应用最新的缩放设置
+        val scalePercentage = GlobalScaleManager.getScalePercentage(this)
+        applyScaleEffects(scalePercentage)
     }
 
     private fun initViews() {
@@ -88,6 +99,15 @@ class SettingsActivity : AppCompatActivity() {
         commonAppsContainer = findViewById(R.id.commonAppsContainer)
         textNoCommonApps = findViewById(R.id.textNoCommonApps)
         btnContacts = findViewById(R.id.btnContacts)
+        
+        // 标签文本控件
+        textDateStyle = findViewById(R.id.textDateStyle)
+        radioLunar = findViewById(R.id.radioLunar)
+        radioSolar = findViewById(R.id.radioSolar)
+        textCommonAppsTitle = findViewById(R.id.textCommonAppsTitle)
+        textContactsTitle = findViewById(R.id.textContactsTitle)
+        textIconSizeTitle = findViewById(R.id.textIconSizeTitle)
+        textWeatherTitle = findViewById(R.id.textWeatherTitle)
     }
 
     private fun loadSettings() {
@@ -110,6 +130,9 @@ class SettingsActivity : AppCompatActivity() {
         val scalePercentage = GlobalScaleManager.getScalePercentage(this)
         seekBarIconSize.progress = scalePercentage
         textIconSize.text = scalePercentage.toString() + "%"
+        
+        // 应用缩放效果
+        applyScaleEffects(scalePercentage)
 
         val commonAppsSet = prefs.getStringSet(KEY_COMMON_APPS, HashSet<String>())
         loadCommonApps(commonAppsSet)
@@ -136,9 +159,12 @@ class SettingsActivity : AppCompatActivity() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val clampedProgress = progress.coerceIn(60, 100)
                 textIconSize.text = clampedProgress.toString() + "%"
+                // 实时应用缩放效果
+                applyScaleEffects(clampedProgress)
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 val clampedProgress = seekBarIconSize.progress.coerceIn(60, 100)
                 GlobalScaleManager.setScalePercentage(this@SettingsActivity, clampedProgress)
@@ -264,7 +290,9 @@ class SettingsActivity : AppCompatActivity() {
                 // 创建应用图标
                 val iconView = android.widget.ImageView(this)
                 iconView.setImageDrawable(appIcon)
-                val iconParams = android.widget.LinearLayout.LayoutParams(120, 120)
+                val originalAppIconSize = 120 // 原始大小120dp
+                val scaledAppIconSize = GlobalScaleManager.getScaledValue(this, originalAppIconSize)
+                val iconParams = android.widget.LinearLayout.LayoutParams(scaledAppIconSize, scaledAppIconSize)
                 iconParams.setMargins(0, 0, 0, 0)
                 iconView.layoutParams = iconParams
                 
@@ -289,34 +317,6 @@ class SettingsActivity : AppCompatActivity() {
                 continue
             }
         }
-        
-        // 为未使用的名额添加虚线框，总共最多6个
-        val MAX_COMMON_APPS = 6
-        val remainingSlots = MAX_COMMON_APPS - sortedApps.size
-        if (remainingSlots > 0) {
-            for (i in 0 until remainingSlots) {
-                // 创建虚线框布局
-                val emptySlotLayout = android.widget.LinearLayout(this)
-                emptySlotLayout.orientation = android.widget.LinearLayout.VERTICAL
-                emptySlotLayout.gravity = android.view.Gravity.CENTER
-                val layoutParams = android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                layoutParams.setMargins(16, 0, 16, 0)
-                emptySlotLayout.layoutParams = layoutParams
-                
-                // 创建虚线框
-                val borderView = android.view.View(this)
-                val borderParams = android.widget.LinearLayout.LayoutParams(64, 64)
-                borderParams.setMargins(0, 0, 0, 0)
-                borderView.layoutParams = borderParams
-                borderView.setBackgroundResource(R.drawable.dashed_border)
-                
-                emptySlotLayout.addView(borderView)
-                commonAppsContainer.addView(emptySlotLayout)
-            }
-        }
     }
 
     private fun parseAppOrders(ordersString: String): Map<String, Int> {
@@ -332,5 +332,70 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
         return orders
+    }
+    
+    private fun applyScaleEffects(scalePercentage: Int) {
+        // 缩放用户头像
+        val originalAvatarSize = 240 // 与联系人头像保持一致的原始大小
+        val scaledAvatarSize = GlobalScaleManager.getScaledValue(this, originalAvatarSize)
+        val avatarParams = userAvatar.layoutParams
+        avatarParams.width = scaledAvatarSize
+        avatarParams.height = scaledAvatarSize
+        userAvatar.layoutParams = avatarParams
+        
+        // 缩放字体大小
+        val originalUserNameSize = 31f // 原始大小31sp
+        val originalUserStatusSize = 24f // 原始大小24sp
+        val originalTitleSize = 27f // 标题原始大小27sp
+        val originalOptionSize = 24f // 选项原始大小24sp
+        val originalButtonSize = 20f // 按钮原始大小20sp
+        val originalSubtextSize = 24f // 副标题原始大小24sp
+        
+        val scaledUserNameSize = GlobalScaleManager.getScaledValue(this, originalUserNameSize)
+        val scaledUserStatusSize = GlobalScaleManager.getScaledValue(this, originalUserStatusSize)
+        val scaledTitleSize = GlobalScaleManager.getScaledValue(this, originalTitleSize)
+        val scaledOptionSize = GlobalScaleManager.getScaledValue(this, originalOptionSize)
+        val scaledButtonSize = GlobalScaleManager.getScaledValue(this, originalButtonSize)
+        val scaledSubtextSize = GlobalScaleManager.getScaledValue(this, originalSubtextSize)
+        
+        // 用户信息文本
+        userName.textSize = scaledUserNameSize
+        userStatus.textSize = scaledUserStatusSize
+        
+        // 标题文本
+        textDateStyle.textSize = scaledTitleSize
+        textCommonAppsTitle.textSize = scaledTitleSize
+        textContactsTitle.textSize = scaledTitleSize
+        textIconSizeTitle.textSize = scaledTitleSize
+        textWeatherTitle.textSize = scaledTitleSize
+        
+        // 选项文本
+        radioLunar.textSize = scaledOptionSize
+        radioSolar.textSize = scaledOptionSize
+        textIconSize.textSize = scaledOptionSize
+        textWeatherVol.textSize = scaledOptionSize
+        textNoCommonApps.textSize = scaledOptionSize
+        
+        // 按钮文本
+        btnSetDefaultLauncher.textSize = scaledSubtextSize
+        btnCommonApps.textSize = scaledButtonSize
+        btnContacts.textSize = scaledButtonSize
+        
+        // 缩放常用应用图标
+        val originalAppIconSize = 120 // 原始大小120dp
+        val scaledAppIconSize = GlobalScaleManager.getScaledValue(this, originalAppIconSize)
+        
+        for (i in 0 until commonAppsContainer.childCount) {
+            val childView = commonAppsContainer.getChildAt(i)
+            if (childView is android.widget.LinearLayout && childView.childCount > 0) {
+                val iconView = childView.getChildAt(0)
+                if (iconView is android.widget.ImageView) {
+                    val iconParams = iconView.layoutParams
+                    iconParams.width = scaledAppIconSize
+                    iconParams.height = scaledAppIconSize
+                    iconView.layoutParams = iconParams
+                }
+            }
+        }
     }
 }
