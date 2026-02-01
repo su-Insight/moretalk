@@ -15,6 +15,7 @@ import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.util.Log
 import com.example.onepass.Logger
 import android.view.View
 import android.view.LayoutInflater
@@ -54,6 +55,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import com.nlf.calendar.Solar
 import com.nlf.calendar.Lunar
+import kotlinx.coroutines.withContext
 
 
 class MainActivity : AppCompatActivity() {
@@ -169,10 +171,13 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(refreshRunnable)
+        handler.removeCallbacksAndMessages(null)
         if (isTextToSpeechInitialized) {
             textToSpeech.stop()
             textToSpeech.shutdown()
+            isTextToSpeechInitialized = false
         }
+        PerformanceMonitor.clearAll()
     }
 
     override fun onStart() {
@@ -202,70 +207,73 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initTextToSpeech() {
-        android.util.Log.i("TTS_DEBUG", "开始初始化TextToSpeech")
-        try {
-            textToSpeech = TextToSpeech(this) { status ->
-                android.util.Log.i("TTS_DEBUG", "TextToSpeech初始化状态: $status")
-                if (status == TextToSpeech.SUCCESS) {
-                    android.util.Log.i("TTS_DEBUG", "TextToSpeech初始化成功，开始设置语言")
-                    val result = textToSpeech.setLanguage(Locale.CHINA)
-                    android.util.Log.i("TTS_DEBUG", "设置中文语言结果: $result")
-                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        android.util.Log.e("TTS_DEBUG", "不支持中文语音，结果: $result")
-                        showTTSErrorDialog()
-                    } else {
-                        isTextToSpeechInitialized = true
-                        android.util.Log.i("TTS_DEBUG", "语音播报初始化成功")
-                        
-                        try {
-                            // 设置语音参数
-                            textToSpeech.setSpeechRate(1.0f)
-                            textToSpeech.setPitch(1.0f)
-                            android.util.Log.i("TTS_DEBUG", "语音参数设置成功")
-                            
-                            // 设置播报监听器
-                            textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                                override fun onStart(utteranceId: String?) {
-                                    android.util.Log.i("TTS_DEBUG", "语音播报开始: $utteranceId")
+        android.util.Log.i("TTS_DEBUG", "开始异步初始化TextToSpeech")
+        
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    textToSpeech = TextToSpeech(this@MainActivity) { status ->
+                        android.util.Log.i("TTS_DEBUG", "TextToSpeech初始化状态: $status")
+                        if (status == TextToSpeech.SUCCESS) {
+                            android.util.Log.i("TTS_DEBUG", "TextToSpeech初始化成功，开始设置语言")
+                            val result = textToSpeech.setLanguage(Locale.CHINA)
+                            android.util.Log.i("TTS_DEBUG", "设置中文语言结果: $result")
+                            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                                android.util.Log.e("TTS_DEBUG", "不支持中文语音，结果: $result")
+                                runOnUiThread {
+                                    showTTSErrorDialog()
                                 }
+                            } else {
+                                isTextToSpeechInitialized = true
+                                android.util.Log.i("TTS_DEBUG", "语音播报初始化成功")
                                 
-                                override fun onDone(utteranceId: String?) {
-                                    android.util.Log.i("TTS_DEBUG", "语音播报完成: $utteranceId")
+                                try {
+                                    textToSpeech.setSpeechRate(1.0f)
+                                    textToSpeech.setPitch(1.0f)
+                                    android.util.Log.i("TTS_DEBUG", "语音参数设置成功")
+                                    
+                                    textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                                        override fun onStart(utteranceId: String?) {
+                                            android.util.Log.i("TTS_DEBUG", "语音播报开始: $utteranceId")
+                                        }
+                                        
+                                        override fun onDone(utteranceId: String?) {
+                                            android.util.Log.i("TTS_DEBUG", "语音播报完成: $utteranceId")
+                                        }
+                                        
+                                        override fun onError(utteranceId: String?) {
+                                            android.util.Log.e("TTS_DEBUG", "语音播报错误: $utteranceId")
+                                        }
+                                        
+                                        override fun onStop(utteranceId: String?, interrupted: Boolean) {
+                                            android.util.Log.i("TTS_DEBUG", "语音播报停止: $utteranceId, 中断: $interrupted")
+                                        }
+                                    })
+                                    android.util.Log.i("TTS_DEBUG", "播报监听器设置成功")
+                                } catch (e: Exception) {
+                                    android.util.Log.e("TTS_DEBUG", "设置语音参数时出错: ${e.message}", e)
                                 }
-                                
-                                override fun onError(utteranceId: String?) {
-                                    android.util.Log.e("TTS_DEBUG", "语音播报错误: $utteranceId")
-                                }
-                                
-                                override fun onStop(utteranceId: String?, interrupted: Boolean) {
-                                    android.util.Log.i("TTS_DEBUG", "语音播报停止: $utteranceId, 中断: $interrupted")
-                                }
-                            })
-                            android.util.Log.i("TTS_DEBUG", "播报监听器设置成功")
-                        } catch (e: Exception) {
-                            android.util.Log.e("TTS_DEBUG", "设置语音参数时出错: ${e.message}", e)
+                            }
+                        } else {
+                            android.util.Log.e("TTS_DEBUG", "语音播报初始化失败: $status")
+                            android.util.Log.e("TTS_DEBUG", "尝试延迟重试...")
+                            handler.postDelayed({
+                                android.util.Log.i("TTS_DEBUG", "开始重试初始化TextToSpeech")
+                                initTextToSpeechRetry()
+                            }, 2000)
+                            android.util.Log.i("TTS_DEBUG", "重试任务已安排")
                         }
                     }
-                } else {
-                    android.util.Log.e("TTS_DEBUG", "语音播报初始化失败: $status")
-                    android.util.Log.e("TTS_DEBUG", "尝试延迟重试...")
-                    // 延迟重试
-                    handler.postDelayed({
-                        android.util.Log.i("TTS_DEBUG", "开始重试初始化TextToSpeech")
-                        initTextToSpeechRetry()
-                    }, 2000)
-                    android.util.Log.i("TTS_DEBUG", "重试任务已安排")
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("TTS_DEBUG", "创建TextToSpeech时出错: ${e.message}", e)
+                android.util.Log.e("TTS_DEBUG", "尝试延迟重试...")
+                handler.postDelayed({
+                    android.util.Log.i("TTS_DEBUG", "开始重试初始化TextToSpeech")
+                    initTextToSpeechRetry()
+                }, 2000)
+                android.util.Log.i("TTS_DEBUG", "重试任务已安排")
             }
-        } catch (e: Exception) {
-            android.util.Log.e("TTS_DEBUG", "创建TextToSpeech时出错: ${e.message}", e)
-            android.util.Log.e("TTS_DEBUG", "尝试延迟重试...")
-            // 延迟重试
-            handler.postDelayed({
-                android.util.Log.i("TTS_DEBUG", "开始重试初始化TextToSpeech")
-                initTextToSpeechRetry()
-            }, 2000)
-            android.util.Log.i("TTS_DEBUG", "重试任务已安排")
         }
     }
 
@@ -376,10 +384,9 @@ class MainActivity : AppCompatActivity() {
         recyclerViewCommonApps = findViewById(R.id.recyclerViewCommonApps)
         
         // 设置常用应用RecyclerView
-        commonAppsAdapter = CommonAppAdapter(commonApps) {
-            packageName ->
+        commonAppsAdapter = CommonAppAdapter(commonApps, { packageName ->
             launchApp(packageName)
-        }
+        }, 80)
         recyclerViewCommonApps.adapter = commonAppsAdapter
         
         // 设置默认的LayoutManager
@@ -626,15 +633,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun fetchWeather(city: String, shouldSpeak: Boolean = false) {
+        PerformanceMonitor.startTimer("fetchWeather")
         Log.d(TAG, "开始请求天气数据")
         Log.d(TAG, "请求城市: $city")
         Log.d(TAG, "API Key: ${AppConfig.API_KEY}")
         Log.d(TAG, "是否播报: $shouldSpeak")
         
         val okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
             .build()
         
         val retrofit = Retrofit.Builder()
@@ -648,6 +656,7 @@ class MainActivity : AppCompatActivity() {
 
         call.enqueue(object : Callback<AmapWeatherResponse> {
             override fun onResponse(call: Call<AmapWeatherResponse>, response: Response<AmapWeatherResponse>) {
+                PerformanceMonitor.endTimer("fetchWeather")
                 Log.d(TAG, "收到API响应")
                 Log.d(TAG, "响应状态码: ${response.code()}")
                 Log.d(TAG, "响应是否成功: ${response.isSuccessful}")
@@ -762,6 +771,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadContacts() {
+        PerformanceMonitor.startTimer("loadContacts")
         Log.d(TAG, "开始加载联系人")
         
         // 从SharedPreferences加载联系人数据
@@ -787,21 +797,21 @@ class MainActivity : AppCompatActivity() {
         // 根据宽度动态计算列数
         recyclerViewContacts.post {
             val recyclerViewWidth = recyclerViewContacts.width
-            val originalImageSize = 400 // 与HomeContactAdapter中的原始大小保持一致
+            val originalImageSize = 400
             val scaledImageSize = GlobalScaleManager.getScaledValue(this, originalImageSize)
-            val contactItemWidth = scaledImageSize + 32 // 联系人项宽度 = 头像宽度 + 左右边距
+            val contactItemWidth = scaledImageSize + 32
             val spanCount = maxOf(1, recyclerViewWidth / contactItemWidth)
             val gridLayoutManager = GridLayoutManager(this, spanCount)
             recyclerViewContacts.layoutManager = gridLayoutManager
-            contactsAdapter.notifyDataSetChanged()
-        }
-        
-        // 更新UI
-        if (contacts.isEmpty()) {
-            contactsCard.visibility = View.GONE
-        } else {
-            contactsCard.visibility = View.VISIBLE
-            contactsAdapter.notifyDataSetChanged()
+            
+            // 更新UI
+            if (contacts.isEmpty()) {
+                contactsCard.visibility = View.GONE
+            } else {
+                contactsCard.visibility = View.VISIBLE
+                contactsAdapter.notifyDataSetChanged()
+            }
+            PerformanceMonitor.endTimer("loadContacts")
         }
     }
     
@@ -1098,7 +1108,11 @@ class MainActivity : AppCompatActivity() {
             val layoutParams = contactsCard.layoutParams as LinearLayout.LayoutParams
             layoutParams.topMargin = (16 * resources.displayMetrics.density).toInt()
             contactsCard.layoutParams = layoutParams
-            commonAppsAdapter.notifyDataSetChanged()
+            commonApps.clear()
+            commonAppsAdapter = CommonAppAdapter(commonApps, { packageName ->
+                launchApp(packageName)
+            }, iconSizeValue)
+            recyclerViewCommonApps.adapter = commonAppsAdapter
             return
         }
         
@@ -1134,19 +1148,21 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        // 通知适配器数据变化
-        commonAppsAdapter.notifyDataSetChanged()
+        // 创建新的适配器，传入缓存的iconSizeValue
+        commonAppsAdapter = CommonAppAdapter(commonApps, { packageName ->
+            launchApp(packageName)
+        }, iconSizeValue)
+        recyclerViewCommonApps.adapter = commonAppsAdapter
         
         // 根据宽度动态计算列数，考虑额外的间距
         recyclerViewCommonApps.post {
             val recyclerViewWidth = recyclerViewCommonApps.width
-            val originalImageSize = 128 // 原始大小128dp
+            val originalImageSize = 128
             val scaledImageSize = GlobalScaleManager.getScaledValue(this, originalImageSize)
-            val appItemWidth = scaledImageSize + 32 + 16 // 应用项宽度 = 图标宽度 + 左右边距 + ItemDecoration右侧间距
-            val spanCount = maxOf(1, minOf(4, recyclerViewWidth / appItemWidth)) // 限制最大列数为4
+            val appItemWidth = scaledImageSize + 32 + 16
+            val spanCount = maxOf(1, minOf(4, recyclerViewWidth / appItemWidth))
             val gridLayoutManager = GridLayoutManager(this, spanCount)
             recyclerViewCommonApps.layoutManager = gridLayoutManager
-            commonAppsAdapter.notifyDataSetChanged()
         }
         
         Log.d(TAG, "常用应用加载完成")
@@ -1155,7 +1171,11 @@ class MainActivity : AppCompatActivity() {
 
 data class CommonApp(val packageName: String, val appName: String, val appIcon: Drawable)
 
-class CommonAppAdapter(private val apps: List<CommonApp>, private val listener: (String) -> Unit) : RecyclerView.Adapter<CommonAppAdapter.ViewHolder>() {
+class CommonAppAdapter(
+    private val apps: List<CommonApp>, 
+    private val listener: (String) -> Unit,
+    private val iconSizeValue: Int = 80
+) : RecyclerView.Adapter<CommonAppAdapter.ViewHolder>() {
     
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_common_app, parent, false)
@@ -1164,7 +1184,7 @@ class CommonAppAdapter(private val apps: List<CommonApp>, private val listener: 
     
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val app = apps[position]
-        holder.bind(app, listener)
+        holder.bind(app, listener, iconSizeValue)
     }
     
     override fun getItemCount(): Int = apps.size
@@ -1173,16 +1193,13 @@ class CommonAppAdapter(private val apps: List<CommonApp>, private val listener: 
         private val iconView: ImageView = itemView.findViewById(R.id.appIcon)
         private val nameView: TextView = itemView.findViewById(R.id.appName)
         
-        fun bind(app: CommonApp, listener: (String) -> Unit) {
+        fun bind(app: CommonApp, listener: (String) -> Unit, iconSizeValue: Int) {
             iconView.setImageDrawable(app.appIcon)
             nameView.text = app.appName
             
-            // 从 SharedPreferences 加载图标大小设置
-            val iconSizeValue = itemView.context.getSharedPreferences("OnePassPrefs", Context.MODE_PRIVATE).getInt("icon_size", 80)
-            // 将 0-100 的值映射到 100-240dp 的范围（增大图标大小），然后在缩小30%的基础上再缩小10%
-            val baseIconSize = 100 + (iconSizeValue * 140 / 100) // 增加100%
-            val originalIconSize = (baseIconSize * 0.7 * 0.9).toInt() // 缩小30%后再缩小10%
-            // 使用GlobalScaleManager进行缩放
+            // 使用缓存的图标大小值
+            val baseIconSize = 100 + (iconSizeValue * 140 / 100)
+            val originalIconSize = (baseIconSize * 0.7 * 0.9).toInt()
             val scaledIconSize = GlobalScaleManager.getScaledValue(itemView.context, originalIconSize)
             val iconParams = iconView.layoutParams
             iconParams.width = scaledIconSize

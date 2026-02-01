@@ -19,6 +19,15 @@ class HomeContactAdapter(private val contacts: List<Contact>, private val listen
     class ContactViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val contactImage: ImageView = itemView.findViewById(R.id.contactImage)
         val contactName: TextView = itemView.findViewById(R.id.contactName)
+        
+        init {
+            contactImage.clipToOutline = true
+            contactImage.outlineProvider = object : ViewOutlineProvider() {
+                override fun getOutline(view: View, outline: Outline) {
+                    outline.setRoundRect(0, 0, view.width, view.height, 16f)
+                }
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ContactViewHolder {
@@ -33,23 +42,15 @@ class HomeContactAdapter(private val contacts: List<Contact>, private val listen
         holder.contactName.text = contact.name
         
         // 根据缩放比例调整头像大小
-        val originalImageSize = 400 // 当前最大尺寸594dp * 70%
+        val originalImageSize = 400
         val scaledImageSize = GlobalScaleManager.getScaledValue(context, originalImageSize)
         val layoutParams = holder.contactImage.layoutParams
         layoutParams.width = scaledImageSize
         layoutParams.height = scaledImageSize
         holder.contactImage.layoutParams = layoutParams
         
-        // 设置头像为圆角矩形
-        holder.contactImage.clipToOutline = true
-        holder.contactImage.outlineProvider = object : ViewOutlineProvider() {
-            override fun getOutline(view: View, outline: Outline) {
-                outline.setRoundRect(0, 0, view.width, view.height, 16f)
-            }
-        }
-        
         // 根据缩放比例调整字体大小
-        val originalTextSize = 26f // 当前最大尺寸46.2sp * 70%
+        val originalTextSize = 26f
         val scaledTextSize = GlobalScaleManager.getScaledValue(context, originalTextSize)
         holder.contactName.textSize = scaledTextSize
         

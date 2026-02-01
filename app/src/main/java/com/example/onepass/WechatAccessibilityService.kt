@@ -9,821 +9,870 @@ import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.example.onepass.AccessibilityNodeHelper.safeRecycle
+import com.example.onepass.AccessibilityNodeHelper.safeRecycleAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/**
+ * 微信视频通话无障碍自动化服务
+ *
+ * 流程说明：
+ * 步骤1: 确保在微信首页
+ * 步骤2: 点击搜索按钮
+ * 步骤3: 输入联系人昵称
+ * 步骤4: 选择联系人进入聊天界面
+ * 步骤5: 点击更多按钮(+)
+ * 步骤6: 点击视频/语音通话
+ * 步骤7: 点击确认通话
+ */
 class WechatAccessibilityService : AccessibilityService() {
     companion object {
         private const val TAG = "WechatAccessibility"
+        private const val MAX_RETRY_COUNT = 3
+        private const val MAX_NAVIGATION_ATTEMPTS = 3
     }
-    
+
     // 协程作用域
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
-
-    // Handler用于延迟触发检查
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    // 状态管理
-    private var isProcessing = false // 是否正在处理
-    private var navigationAttempts = 0 // 导航尝试次数
-    private val MAX_NAVIGATION_ATTEMPTS = 3 // 最大导航尝试次数
-    
+    // 状态管理 - 使用AtomicBoolean确保线程安全
+    private val isProcessing = java.util.concurrent.atomic.AtomicBoolean(false)
+    private var retryCount = 0
+    private var navigationAttempts = 0
+
+    // 主动触发下一步的延迟任务
+    private var nextStepRunnable: Runnable? = null
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        val currentActivity = event?.className ?: return
-        
-        Log.d(TAG, "Current Activity: $currentActivity, Step: ${WeChatData.index}")
-        
-        // 如果正在处理，跳过新事件
-        if (isProcessing) {
-            Log.d(TAG, "正在处理中，跳过新事件")
+        val currentActivity = event?.className?.toString() ?: run {
+            Log.d(TAG, "事件为空或className为null")
             return
         }
-        
-        // 步骤1: 启动微信 -> 检测当前页面并导航到首页
-        if (WeChatData.index == 1) {
-            Log.d(TAG, "步骤1检测: 当前界面: $currentActivity")
-            processStep1(currentActivity)
-        }
-        
-        // 步骤2: 点击搜索
-        else if (WeChatData.index == 2) {
-            Log.d(TAG, "步骤2: 点击搜索, 当前界面: $currentActivity")
-            processStep2(currentActivity)
-        }
-        
-        // 步骤3: 输入联系人昵称
-        else if (WeChatData.index == 3) {
-            Log.d(TAG, "步骤3: 输入联系人昵称, 当前界面: $currentActivity")
-            processStep3(currentActivity)
-        }
-        
-        // 步骤4: 选择联系人
-        else if (WeChatData.index == 4) {
-            Log.d(TAG, "步骤4: 选择联系人, 当前界面: $currentActivity")
-            processStep4(currentActivity)
-        }
-        
-        // 步骤5: 点击更多按钮
-        else if (WeChatData.index == 5) {
-            Log.d(TAG, "步骤5: 点击更多按钮, 当前界面: $currentActivity")
-            processStep5(currentActivity)
-        }
-        
-        // 步骤6: 点击通话菜单
-        else if (WeChatData.index == 6) {
-            Log.d(TAG, "步骤6: 点击通话菜单, 当前界面: $currentActivity")
-            processStep6(currentActivity)
-        }
-        
-        // 步骤7: 点击确认通话
-        else if (WeChatData.index == 7) {
-            Log.d(TAG, "步骤7: 点击确认通话, 当前界面: $currentActivity")
-            processStep7(currentActivity)
-        }
-    }
-    
-    /**
-     * 步骤1: 检测当前页面并导航到首页
-     */
-    private fun processStep1(currentActivity: CharSequence) {
-        serviceScope.launch {
-            isProcessing = true
-            try {
-                delay(1000) // 短暂延迟，确保界面稳定
-                
-                val rootNode = rootInActiveWindow
-                if (rootNode == null) {
-                    Log.d(TAG, "rootNode为空，等待下一次事件")
-                    return@launch
-                }
-                
-                // 分析当前页面类型
-                val pageType = analyzeCurrentPage(rootNode)
-                Log.d(TAG, "当前页面类型: $pageType")
 
-                when (pageType) {
-                    PageType.HOME -> {
-                        Log.d(TAG, ">>> 已在微信首页，进入步骤2 <<<")
-                        resetNavigationAttempts()
-                        // 直接在步骤1中完成搜索点击，避免依赖新事件
-                        val searchNode = findSearchIcon(rootNode)
-                        if (searchNode != null) {
-                            Log.d(TAG, "步骤1中直接点击搜索图标")
-                            searchNode.click()
-                            // 立即更新到步骤3，不再延迟
-                            Log.d(TAG, ">>> 进入步骤3: 输入联系人昵称 <<<")
-                            WeChatData.updateIndex(3)
-                            // 延迟后重置isProcessing，等待输入框出现
-                            mainHandler.postDelayed({
-                                isProcessing = false
-                            }, 500)
-                        } else {
-                            Log.d(TAG, "未找到搜索图标")
-                            isProcessing = false
+        // 跳过系统组件和无效事件
+        if (shouldSkipActivity(currentActivity)) {
+            Log.d(TAG, "跳过Activity: $currentActivity")
+            return
+        }
+
+        Log.d(TAG, "Current Activity: $currentActivity, Step: ${WeChatData.index}")
+
+        // 如果正在处理，跳过新事件（使用原子操作确保线程安全）
+        if (isProcessing.get()) {
+            Log.d(TAG, "正在处理中，跳过新事件: $currentActivity")
+            return
+        }
+
+
+        when (WeChatData.index) {
+            1 -> processStep1(currentActivity)
+            2 -> processStep2(currentActivity)
+            3 -> processStep3(currentActivity)
+            4 -> processStep4(currentActivity)
+            5 -> processStep5(currentActivity)
+            6 -> processStep6(currentActivity)
+            7 -> processStep7(currentActivity)
+        }
+    }
+
+    /**
+     * 判断是否需要跳过某些Activity事件
+     */
+    private fun shouldSkipActivity(activityName: String): Boolean {
+        return activityName.contains("Toast") ||
+                activityName.contains("SoftInputWindow") ||
+                activityName == "com.example.onepass.MainActivity"
+    }
+
+    // ==================== 步骤处理 ====================
+
+    /**
+     * 步骤1: 确保在微信首页
+     * 逻辑：如果在首页 -> 进入步骤2；如果在其他页面 -> 执行返回直到回到首页
+     */
+    private fun processStep1(currentActivity: String) {
+        Log.d(TAG, ">>> 进入步骤1，当前Activity: $currentActivity <<<")
+        serviceScope.launch {
+            setProcessing(true)
+            try {
+                Log.d(TAG, "步骤1 - 当前Activity: $currentActivity")
+                when {
+                    // 已在首页
+                    isWechatHomePage(currentActivity) -> {
+                        Log.d(TAG, ">>> 已在微信首页，点击底部【微信】按钮返回聊天列表 <<<")
+                        var rootNode: AccessibilityNodeInfo? = null
+                        var wechatTab: List<AccessibilityNodeInfo>? = null
+                        try {
+                            rootNode = rootInActiveWindow
+                            if (rootNode != null) {
+                                // 方法1: 通过View ID查找
+                                wechatTab = rootNode.findAccessibilityNodeInfosByViewId(WeChatId.BOTTOM_WECHAT.id)
+                                if (wechatTab.isEmpty()) {
+                                    // 方法2: 通过文本"微信"查找
+                                    wechatTab = rootNode.findAccessibilityNodeInfosByText("微信")
+                                }
+                                if (wechatTab.isEmpty()) {
+                                    // 方法3: 通过contentDescription查找
+                                    wechatTab = rootNode.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/dn")
+                                }
+
+                                if (wechatTab.isNotEmpty()) {
+                                    val tabNode = wechatTab.first()
+                                    val clickResult = if (tabNode.isClickable) {
+                                        tabNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                                    } else {
+                                        tabNode.parent?.performAction(AccessibilityNodeInfo.ACTION_CLICK) ?: false
+                                    }
+                                    Log.d(TAG, "点击底部【微信】按钮结果: $clickResult")
+                                    delay(500)
+                                } else {
+                                    Log.d(TAG, "未找到底部【微信】按钮，直接进入步骤2")
+                                }
+                            }
+                            Log.d(TAG, ">>> 进入步骤2 <<<")
+                            resetRetryAndNavigation()
+                            WeChatData.updateIndex(2)
+                            setProcessing(false)
+                            scheduleNextStep(500)
+                            return@launch
+                        } finally {
+                            wechatTab?.safeRecycleAll()
+                            rootNode?.safeRecycle()
                         }
+                    }
+                    // 在搜索界面
+                    isSearchPage(currentActivity) -> {
+                        Log.d(TAG, ">>> 在搜索界面，直接进入步骤3 <<<")
+                        resetRetryAndNavigation()
+                        WeChatData.updateIndex(3)
+                        setProcessing(false)
+                        scheduleNextStep(500)
                         return@launch
                     }
-                    PageType.CONTACTS -> {
-                        Log.d(TAG, ">>> 在通讯录页面，直接进入步骤2 <<<")
-                        resetNavigationAttempts()
-                        // 直接在步骤1中完成搜索点击，避免依赖新事件
-                        val searchNode = findSearchIcon(rootNode)
-                        if (searchNode != null) {
-                            Log.d(TAG, "步骤1中直接点击搜索图标")
-                            searchNode.click()
-                            // 立即更新到步骤3，不再延迟
-                            Log.d(TAG, ">>> 进入步骤3: 输入联系人昵称 <<<")
-                            WeChatData.updateIndex(3)
-                            // 延迟后重置isProcessing，等待输入框出现
-                            mainHandler.postDelayed({
-                                isProcessing = false
-                            }, 500)
-                        } else {
-                            Log.d(TAG, "未找到搜索图标")
-                            isProcessing = false
-                        }
+                    // 在聊天界面
+                    isChatPage(currentActivity) -> {
+                        Log.d(TAG, ">>> 在聊天界面，执行返回 <<<")
+                        performGlobalAction(GLOBAL_ACTION_BACK)
+                        delay(500)
+                        incrementNavigationAttempts()
+                        setProcessing(false)
+                        scheduleNextStep(500)
                         return@launch
                     }
-                    PageType.ME -> {
-                        Log.d(TAG, ">>> 在'我的'页面，尝试导航到首页 <<<")
-                        navigateFromMePage(rootNode)
+                    // 有弹窗
+                    isDialogPage(currentActivity) -> {
+                        Log.d(TAG, ">>> 检测到弹窗，关闭弹窗 <<<")
+                        performGlobalAction(GLOBAL_ACTION_BACK)
+                        delay(500)
+                        performGlobalAction(GLOBAL_ACTION_BACK)
+                        delay(500)
+                        setProcessing(false)
+                        scheduleNextStep(500)
+                        return@launch
                     }
-                    PageType.OTHER -> {
-                        Log.d(TAG, ">>> 在其他页面，尝试智能导航 <<<")
-                        smartNavigation(rootNode)
+                    // 其他页面，尝试返回
+                    else -> {
+                        Log.d(TAG, ">>> 在其他页面，当前Activity: $currentActivity <<<")
+                        if (navigationAttempts < MAX_NAVIGATION_ATTEMPTS) {
+                            Log.d(TAG, ">>> 在其他页面，执行返回 (${navigationAttempts + 1}/$MAX_NAVIGATION_ATTEMPTS) <<<")
+                            performGlobalAction(GLOBAL_ACTION_BACK)
+                            delay(500)
+                            incrementNavigationAttempts()
+                            setProcessing(false)
+                            scheduleNextStep(500)
+                            return@launch
+                        } else {
+                            Log.d(TAG, ">>> 导航尝试次数达到上限，重置 <<<")
+                            resetAndStop()
+                            setProcessing(false)
+                            return@launch
+                        }
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "处理步骤1失败", e)
-            } finally {
-                isProcessing = false
+                Log.e(TAG, "步骤1处理失败", e)
+                handleError(1)
+                setProcessing(false)
             }
         }
     }
-    
+
     /**
-     * 步骤2: 点击搜索图标
+     * 步骤2: 点击搜索按钮
      */
-    private fun processStep2(currentActivity: CharSequence) {
+    private fun processStep2(currentActivity: String) {
+        Log.d(TAG, ">>> 进入步骤2，当前Activity: $currentActivity <<<")
         serviceScope.launch {
-            isProcessing = true
+            PerformanceMonitor.startTimer("step2_clickSearch")
+            setProcessing(true)
+            var rootNode: AccessibilityNodeInfo? = null
             try {
-                delay(500)
-                
-                val rootNode = rootInActiveWindow
-                if (rootNode == null) {
-                    Log.d(TAG, "rootNode为空，等待下一次事件")
+                rootNode = rootInActiveWindow ?: run {
+                    Log.d(TAG, "rootNode为空")
+                    setProcessing(false)
+                    PerformanceMonitor.endTimer("step2_clickSearch")
                     return@launch
                 }
-                
-                // 查找搜索图标
-                val searchNode = findSearchIcon(rootNode)
+
+                // 查找搜索按钮 - 优先查找可点击的搜索图标
+                val searchNode = findSearchButton(rootNode)
+
                 if (searchNode != null) {
-                    Log.d(TAG, "点击搜索图标")
-                    searchNode.click()
-                    delay(800)
+                    Log.d(TAG, "点击搜索按钮")
+                    val clickResult = searchNode.click()
+                    Log.d(TAG, "搜索按钮点击结果: $clickResult")
+                    if (!clickResult) {
+                        Log.e(TAG, "搜索按钮点击失败，重试")
+                        handleRetry("搜索按钮点击失败", 1)
+                        setProcessing(false)
+                        PerformanceMonitor.endTimer("step2_clickSearch")
+                        return@launch
+                    }
+                    delay(500)
+                    resetRetryAndNavigation()
                     WeChatData.updateIndex(3)
+                    setProcessing(false)
+                    PerformanceMonitor.endTimer("step2_clickSearch")
+                    scheduleNextStep(500)
+                    return@launch
                 } else {
-                    Log.d(TAG, "未找到搜索图标，返回步骤1")
-                    WeChatData.updateIndex(1)
+                    Log.d(TAG, "未找到搜索按钮，可能已在搜索界面")
+                    // 检查是否已经在搜索界面
+                    if (isSearchPage(currentActivity)) {
+                        Log.d(TAG, "已在搜索界面，进入步骤3")
+                        resetRetryAndNavigation()
+                        WeChatData.updateIndex(3)
+                        setProcessing(false)
+                        PerformanceMonitor.endTimer("step2_clickSearch")
+                        scheduleNextStep(500)
+                        return@launch
+                    } else {
+                        handleRetry("未找到搜索按钮", 1)
+                        setProcessing(false)
+                        PerformanceMonitor.endTimer("step2_clickSearch")
+                    }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "处理步骤2失败", e)
-                WeChatData.updateIndex(1)
+                Log.e(TAG, "步骤2处理失败", e)
+                handleError(1)
+                setProcessing(false)
+                PerformanceMonitor.endTimer("step2_clickSearch")
             } finally {
-                isProcessing = false
+                rootNode?.safeRecycle()
             }
         }
     }
-    
+
     /**
      * 步骤3: 输入联系人昵称
      */
-    private fun processStep3(currentActivity: CharSequence) {
+    private fun processStep3(currentActivity: String) {
+        Log.d(TAG, ">>> 进入步骤3，当前Activity: $currentActivity <<<")
         serviceScope.launch {
-            isProcessing = true
+            setProcessing(true)
+            var rootNode: AccessibilityNodeInfo? = null
             try {
-                delay(500)
-
-                val rootNode = rootInActiveWindow
-                if (rootNode == null) {
-                    Log.d(TAG, "rootNode为空，等待下一次事件")
+                rootNode = rootInActiveWindow ?: run {
+                    Log.d(TAG, "rootNode为空")
+                    setProcessing(false)
                     return@launch
                 }
 
                 // 查找输入框
                 val inputNode = findInputField(rootNode)
-                if (inputNode != null) {
-                    Log.d(TAG, "输入联系人昵称: ${WeChatData.value}")
+
+                if (inputNode != null && inputNode.isEditable) {
+                    Log.d(TAG, "输入联系人: ${WeChatData.value}")
                     val result = inputNode.input(WeChatData.value)
-                    if (result) {
-                        Log.d(TAG, "输入成功，等待搜索结果出现")
-                        // 增加延迟，等待搜索结果加载完成
-                        delay(1500)
-                        WeChatData.updateIndex(4)
-                        Log.d(TAG, ">>> 进入步骤4: 选择联系人 <<<")
-                    } else {
-                        Log.d(TAG, "输入失败，重新尝试")
+                    Log.d(TAG, "输入结果: $result")
+                    if (!result) {
+                        Log.e(TAG, "输入失败，重试")
+                        handleRetry("输入失败", 2)
+                        setProcessing(false)
+                        return@launch
                     }
+                    Log.d(TAG, "输入成功，等待搜索结果")
+                    delay(500)
+                    resetRetryAndNavigation()
+                    WeChatData.updateIndex(4)
+                    setProcessing(false)
+                    scheduleNextStep(500)
+                    return@launch
                 } else {
-                    Log.d(TAG, "未找到输入框，返回步骤2")
-                    WeChatData.updateIndex(2)
+                    handleRetry("未找到输入框", 2)
+                    setProcessing(false)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "处理步骤3失败", e)
-                WeChatData.updateIndex(2)
+                Log.e(TAG, "步骤3处理失败", e)
+                handleError(2)
+                setProcessing(false)
             } finally {
-                isProcessing = false
+                rootNode?.safeRecycle()
             }
         }
     }
-    
-    /**
-     * 步骤4: 选择联系人
-     */
-    private fun processStep4(currentActivity: CharSequence) {
-        serviceScope.launch {
-            isProcessing = true
-            try {
-                delay(500)
 
-                val rootNode = rootInActiveWindow
-                if (rootNode == null) {
-                    Log.d(TAG, "rootNode为空，等待下一次事件")
+    /**
+     * 步骤4: 选择第一个搜索结果进入聊天界面
+     */
+    private fun processStep4(currentActivity: String) {
+        Log.d(TAG, ">>> 进入步骤4，当前Activity: $currentActivity <<<")
+        serviceScope.launch {
+            setProcessing(true)
+            var rootNode: AccessibilityNodeInfo? = null
+            try {
+                rootNode = rootInActiveWindow ?: run {
+                    Log.d(TAG, "rootNode为空")
+                    setProcessing(false)
                     return@launch
                 }
 
-                // 查找联系人列表（第一个搜索结果）
-                val contactNode = findContactList(rootNode)
+                // 查找搜索结果列表
+                val contactNode = findSearchResult(rootNode)
+
                 if (contactNode != null) {
-                    Log.d(TAG, "选择联系人")
-                    contactNode.click()
-                    delay(800)
+                    Log.d(TAG, "点击联系人")
+                    val clickResult = contactNode.click()
+                    if (!clickResult) {
+                        Log.e(TAG, "点击联系人失败，重试")
+                        handleRetry("点击联系人失败", 3)
+                        setProcessing(false)
+                        return@launch
+                    }
+                    delay(500)
+                    resetRetryAndNavigation()
                     WeChatData.updateIndex(5)
-                    Log.d(TAG, ">>> 进入步骤5: 点击更多按钮 <<<")
+                    setProcessing(false)
+                    scheduleNextStep(500)
+                    return@launch
                 } else {
-                    Log.d(TAG, "未找到联系人列表，搜索结果可能还未出现，保持步骤4继续等待")
-                    // 不返回步骤3，保持index为4继续等待新事件
+                    // 搜索结果可能还未加载，不重试，等待下一个事件
+                    Log.d(TAG, "搜索结果未出现，继续等待")
+                    setProcessing(false)
+                    scheduleNextStep(500)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "处理步骤4失败", e)
-                // 不返回步骤3，保持index为4继续等待
+                Log.e(TAG, "步骤4处理失败", e)
+                handleError(3)
+                setProcessing(false)
             } finally {
-                isProcessing = false
+                rootNode?.safeRecycle()
             }
         }
     }
-    
+
     /**
-     * 步骤5: 点击更多按钮
+     * 步骤5: 点击更多按钮(+)
      */
-    private fun processStep5(currentActivity: CharSequence) {
+    private fun processStep5(currentActivity: String) {
+        Log.d(TAG, ">>> 进入步骤5，当前Activity: $currentActivity <<<")
         serviceScope.launch {
-            isProcessing = true
+            setProcessing(true)
+            var rootNode: AccessibilityNodeInfo? = null
             try {
-                delay(500)
-                
-                val rootNode = rootInActiveWindow
-                if (rootNode == null) {
-                    Log.d(TAG, "rootNode为空，等待下一次事件")
+                rootNode = rootInActiveWindow ?: run {
+                    Log.d(TAG, "rootNode为空")
+                    setProcessing(false)
                     return@launch
                 }
-                
+
+                // 确保在聊天界面
+                if (!isChatPage(currentActivity)) {
+                    Log.d(TAG, "不在聊天界面，等待")
+                    setProcessing(false)
+                    return@launch
+                }
+
                 // 查找更多按钮
                 val moreNode = findMoreButton(rootNode)
+
                 if (moreNode != null) {
                     Log.d(TAG, "点击更多按钮")
-                    moreNode.click()
+                    val clickResult = moreNode.click()
+                    if (!clickResult) {
+                        Log.e(TAG, "点击更多按钮失败，重试")
+                        handleRetry("点击更多按钮失败", 4)
+                        setProcessing(false)
+                        return@launch
+                    }
                     delay(500)
+                    resetRetryAndNavigation()
                     WeChatData.updateIndex(6)
+                    setProcessing(false)
+                    scheduleNextStep(500)
+                    return@launch
                 } else {
-                    Log.d(TAG, "未找到更多按钮，返回步骤4")
-                    WeChatData.updateIndex(4)
+                    handleRetry("未找到更多按钮", 4)
+                    setProcessing(false)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "处理步骤5失败", e)
-                WeChatData.updateIndex(4)
+                Log.e(TAG, "步骤5处理失败", e)
+                handleError(4)
+                setProcessing(false)
             } finally {
-                isProcessing = false
+                rootNode?.safeRecycle()
             }
         }
     }
-    
+
     /**
-     * 步骤6: 点击通话菜单
+     * 步骤6: 点击视频通话菜单（从更多面板中选择）
      */
-    private fun processStep6(currentActivity: CharSequence) {
+    private fun processStep6(currentActivity: String) {
+        Log.d(TAG, ">>> 进入步骤6，当前Activity: $currentActivity <<<")
         serviceScope.launch {
-            isProcessing = true
+            setProcessing(true)
+            var menuNodes: List<AccessibilityNodeInfo>? = null
             try {
-                delay(500)
-                
-                val rootNode = rootInActiveWindow
-                if (rootNode == null) {
-                    Log.d(TAG, "rootNode为空，等待下一次事件")
-                    return@launch
-                }
-                
-                // 查找通话菜单
-                val callNode = findCallMenu(rootNode)
-                if (callNode != null) {
-                    Log.d(TAG, "点击通话菜单")
-                    callNode.click()
-                    delay(500)
+                // 更多面板展开时，Activity 通常仍为微信聊天界面
+                val root = rootInActiveWindow
+                val callText = WeChatData.findText(false) // 获取“视频通话”文字
+                Log.d(TAG, "步骤6 - 正在查找更多面板中的文字: $callText")
+
+                menuNodes = root?.findAccessibilityNodeInfosByText(callText)
+
+                if (!menuNodes.isNullOrEmpty()) {
+                    val targetNode = menuNodes.first()
+                    val rect = Rect()
+                    targetNode.getBoundsInScreen(rect)
+
+                    Log.d(TAG, "找到通话图标，位置: (${rect.centerX()}, ${rect.centerY()})，执行模拟点击")
+
+                    // 使用你代码中的 performClick 模拟物理点击，解决 performAction 无效的问题
+                    performClick(rect.centerX().toFloat(), rect.centerY().toFloat())
+
+                    delay(800) // 等待底部菜单弹窗弹出
                     WeChatData.updateIndex(7)
+                    setProcessing(false)
+                    scheduleNextStep(200)
                 } else {
-                    Log.d(TAG, "未找到通话菜单，返回步骤5")
-                    WeChatData.updateIndex(5)
+                    Log.e(TAG, "更多面板中未找到文字: $callText")
+                    handleRetry("未找到通话图标", 5)
+                    setProcessing(false)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "处理步骤6失败", e)
-                WeChatData.updateIndex(5)
+                Log.e(TAG, "步骤6处理失败", e)
+                handleError(5)
+                setProcessing(false)
             } finally {
-                isProcessing = false
+                menuNodes?.safeRecycleAll()
             }
         }
     }
-    
+
     /**
-     * 步骤7: 点击确认通话
+     * 步骤7: 点击视频/语音通话选项（底部确认弹窗）
      */
-    private fun processStep7(currentActivity: CharSequence) {
+    private fun processStep7(currentActivity: String) {
+        Log.d(TAG, ">>> 进入步骤7，当前Activity: $currentActivity <<<")
         serviceScope.launch {
-            isProcessing = true
+            setProcessing(true)
+            var options: List<AccessibilityNodeInfo>? = null
             try {
-                delay(500)
-                
-                val rootNode = rootInActiveWindow
-                if (rootNode == null) {
-                    Log.d(TAG, "rootNode为空，等待下一次事件")
-                    return@launch
-                }
-                
-                // 查找确认按钮
-                val confirmNode = findConfirmButton(rootNode)
-                if (confirmNode != null) {
-                    Log.d(TAG, "点击确认通话")
-                    confirmNode.click()
-                    delay(1000)
-                    Log.d(TAG, "通话操作完成")
-                    WeChatData.updateIndex(0) // 重置步骤
+                // 判断是否在弹窗页面，或者 Activity 还没切换但弹窗已出的情况
+                val root = rootInActiveWindow
+                val confirmText = WeChatData.findText(true) // 获取弹窗里的“视频通话”
+                Log.d(TAG, "步骤7 - 正在查找弹窗选项: $confirmText")
+
+                options = root?.findAccessibilityNodeInfosByText(confirmText)
+
+                if (!options.isNullOrEmpty()) {
+                    val optionNode = options.first()
+
+                    // 优先尝试标准点击
+                    var clickResult = optionNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+
+                    // 如果标准点击失败，尝试坐标点击
+                    if (!clickResult) {
+                        val rect = Rect()
+                        optionNode.getBoundsInScreen(rect)
+                        performClick(rect.centerX().toFloat(), rect.centerY().toFloat())
+                        clickResult = true
+                    }
+
+                    Log.d(TAG, "点击通话选项结果: $clickResult")
+                    delay(500)
+                    Log.d(TAG, ">>> 通话流程完成 <<<")
+                    WeChatData.updateIndex(0)
+                    setProcessing(false)
                 } else {
-                    Log.d(TAG, "未找到确认按钮，返回步骤6")
-                    WeChatData.updateIndex(6)
+                    // 如果没找到，可能是弹窗还没加载完，等待下一次事件
+                    Log.d(TAG, "未找到通话选项，继续等待...")
+                    setProcessing(false)
+                    scheduleNextStep(500)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "处理步骤7失败", e)
-                WeChatData.updateIndex(6)
+                Log.e(TAG, "步骤7处理失败", e)
+                handleError(6)
+                setProcessing(false)
             } finally {
-                isProcessing = false
+                options?.safeRecycleAll()
             }
         }
     }
-    
-    /**
-     * 页面类型枚举
-     */
-    private enum class PageType {
-        HOME,        // 微信首页
-        CONTACTS,    // 通讯录页面
-        ME,          // "我的"页面
-        OTHER        // 其他页面
-    }
-    
-    /**
-     * 分析当前页面类型
-     */
-    private fun analyzeCurrentPage(rootNode: AccessibilityNodeInfo): PageType {
-        // 1. 检测是否在微信首页
-        if (isHomePage(rootNode)) {
-            return PageType.HOME
-        }
-        
-        // 2. 检测是否在通讯录页面
-        if (isContactsPage(rootNode)) {
-            return PageType.CONTACTS
-        }
-        
-        // 3. 检测是否在"我的"页面
-        if (isMePage(rootNode)) {
-            return PageType.ME
-        }
-        
-        // 4. 其他页面
-        return PageType.OTHER
-    }
-    
-    /**
-     * 检测是否在微信首页
-     */
-    private fun isHomePage(rootNode: AccessibilityNodeInfo): Boolean {
-        // 检测微信首页特征：底部有4个标签（微信、通讯录、发现、我）
-        // 首先尝试查找搜索输入框（首页通常有搜索框）
-        val hasSearchInput = findInputField(rootNode) != null
 
-        // 检查底部标签数量（首页有4个标签）
-        val bottomTabNodes = findBottomTabs(rootNode)
-        val hasFourTabs = bottomTabNodes.size >= 3
+    // ==================== 页面判断 ====================
 
-        Log.d(TAG, "首页检测 - 有搜索框: $hasSearchInput, 底部标签数: ${bottomTabNodes.size}")
-
-        return hasSearchInput || hasFourTabs
+    private fun isWechatHomePage(activityName: String): Boolean {
+        return activityName == WeChatActivity.INDEX.id
     }
 
-    /**
-     * 查找底部所有可点击的标签
-     */
-    private fun findBottomTabs(rootNode: AccessibilityNodeInfo): List<AccessibilityNodeInfo> {
-        val result = mutableListOf<AccessibilityNodeInfo>()
-        findBottomClickableNodes(rootNode, result)
-        return result
+    private fun isChatPage(activityName: String): Boolean {
+        return activityName == WeChatActivity.CHAT.id
     }
 
-    /**
-     * 递归查找底部可点击的节点（底部标签）
-     */
-    private fun findBottomClickableNodes(node: AccessibilityNodeInfo?, result: MutableList<AccessibilityNodeInfo>) {
-        if (node == null) return
-
-        val rect = Rect()
-        node.getBoundsInScreen(rect)
-        val screenHeight = screenHeight()
-
-        // 如果节点在屏幕下半部分（可能是底部标签区域）且可点击
-        if (rect.top > screenHeight * 0.6 && node.isClickable) {
-            result.add(node)
-        }
-
-        for (i in 0 until node.childCount) {
-            findBottomClickableNodes(node.getChild(i), result)
-        }
+    private fun isSearchPage(activityName: String): Boolean {
+        return activityName == WeChatActivity.SEARCH.id
     }
-    
-    /**
-     * 检测是否在通讯录页面
-     */
-    private fun isContactsPage(rootNode: AccessibilityNodeInfo): Boolean {
-        // 检测通讯录页面特征
-        val hasContactsTab = findNodeByText(rootNode, "通讯录") || findNodeByText(rootNode, "Contacts")
-        val hasNewContact = findNodeByText(rootNode, "新的朋友") || findNodeByText(rootNode, "New Friend")
-        val hasOfficialAccounts = findNodeByText(rootNode, "公众号") || findNodeByText(rootNode, "Official Accounts")
-        
-        return hasContactsTab || hasNewContact || hasOfficialAccounts
+
+    private fun isDialogPage(activityName: String): Boolean {
+        return activityName == WeChatActivity.DIALOG.id ||
+                activityName == WeChatActivity.DIALOG_OLD.id
     }
-    
-    /**
-     * 检测是否在"我的"页面
-     */
-    private fun isMePage(rootNode: AccessibilityNodeInfo): Boolean {
-        // 检测"我的"页面特征
-        val hasMeTab = findNodeByText(rootNode, "我") || findNodeByText(rootNode, "Me")
-        val hasWallet = findNodeByText(rootNode, "钱包") || findNodeByText(rootNode, "Wallet")
-        val hasFavorites = findNodeByText(rootNode, "收藏") || findNodeByText(rootNode, "Favorites")
-        val hasSettings = findNodeByText(rootNode, "设置") || findNodeByText(rootNode, "Settings")
-        
-        return hasMeTab || hasWallet || hasFavorites || hasSettings
-    }
-    
-    /**
-     * 从"我的"页面导航到首页
-     */
-    private fun navigateFromMePage(rootNode: AccessibilityNodeInfo) {
-        serviceScope.launch {
-            try {
-                // 尝试点击底部"微信"标签
-                val wechatTab = findBottomTab(rootNode, "微信") ?: findBottomTab(rootNode, "Chats")
-                if (wechatTab != null) {
-                    Log.d(TAG, "点击底部微信标签")
-                    wechatTab.click()
-                    delay(800)
-                    resetNavigationAttempts()
-                } else {
-                    // 如果没有底部标签，尝试返回
-                    performGlobalAction(GLOBAL_ACTION_BACK)
-                    delay(500)
-                    incrementNavigationAttempts()
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "从‘我的’页面导航失败", e)
-                incrementNavigationAttempts()
+
+    // ==================== 节点查找工具 ====================
+
+    private fun findSearchButton(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        // 方法1: 通过ViewId查找（最快）
+        var searchById: List<AccessibilityNodeInfo>? = null
+        try {
+            searchById = rootNode.findAccessibilityNodeInfosByViewId(WeChatId.SEARCH.id)
+            if (searchById.isNotEmpty()) {
+                return searchById.first()
             }
+        } finally {
+            searchById?.safeRecycleAll()
         }
-    }
-    
-    /**
-     * 智能导航
-     */
-    private fun smartNavigation(rootNode: AccessibilityNodeInfo) {
-        serviceScope.launch {
-            try {
-                if (navigationAttempts < MAX_NAVIGATION_ATTEMPTS) {
-                    // 优先尝试点击底部标签栏
-                    val wechatTab = findBottomTab(rootNode, "微信") ?: findBottomTab(rootNode, "Chats")
-                    if (wechatTab != null) {
-                        Log.d(TAG, "点击底部微信标签")
-                        wechatTab.click()
-                        delay(800)
-                        resetNavigationAttempts()
-                        return@launch
-                    }
-                    
-                    // 尝试点击底部"通讯录"标签
-                    val contactsTab = findBottomTab(rootNode, "通讯录") ?: findBottomTab(rootNode, "Contacts")
-                    if (contactsTab != null) {
-                        Log.d(TAG, "点击底部通讯录标签")
-                        contactsTab.click()
-                        delay(800)
-                        resetNavigationAttempts()
-                        return@launch
-                    }
-                    
-                    // 尝试返回操作
-                    Log.d(TAG, "尝试返回操作 (${navigationAttempts + 1}/$MAX_NAVIGATION_ATTEMPTS)")
-                    performGlobalAction(GLOBAL_ACTION_BACK)
-                    delay(500)
-                    incrementNavigationAttempts()
-                } else {
-                    Log.d(TAG, "导航尝试次数达到上限，尝试重启微信")
-                    resetNavigationAttempts()
-                    restartWechat()
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "智能导航失败", e)
-                incrementNavigationAttempts()
-            }
-        }
-    }
-    
-    /**
-     * 导航失败时重置状态
-     */
-    private fun restartWechat() {
-        Log.d(TAG, "导航失败，重置到初始状态")
-        resetNavigationAttempts()
-        WeChatData.updateIndex(0)
-    }
-    
-    /**
-     * 查找底部标签
-     */
-    private fun findBottomTab(rootNode: AccessibilityNodeInfo, text: String): AccessibilityNodeInfo? {
-        val nodes = rootNode.findAccessibilityNodeInfosByText(text)
-        for (node in nodes) {
-            if (node.isClickable) {
-                // 检查是否在底部区域
-                val rect = Rect()
-                node.getBoundsInScreen(rect)
-                // 简单判断：如果节点在屏幕下半部分，认为是底部标签
-                if (rect.top > (screenHeight() / 2)) {
-                    return node
-                }
-            }
-        }
-        return null
-    }
-    
-    /**
-     * 获取屏幕高度
-     */
-    private fun screenHeight(): Int {
-        val displayMetrics = resources.displayMetrics
-        return displayMetrics.heightPixels
-    }
-    
-    /**
-     * 增加导航尝试次数
-     */
-    private fun incrementNavigationAttempts() {
-        navigationAttempts++
-        if (navigationAttempts >= MAX_NAVIGATION_ATTEMPTS) {
-            Log.d(TAG, "导航尝试次数达到上限，重启微信")
-            restartWechat()
-            resetNavigationAttempts()
-        }
-    }
-    
-    /**
-     * 重置导航尝试次数
-     */
-    private fun resetNavigationAttempts() {
-        navigationAttempts = 0
-    }
-    
-    /**
-     * 查找搜索图标
-     */
-    private fun findSearchIcon(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        // 方法1: 通过ViewId查找
-        val searchById = rootNode.findAccessibilityNodeInfosByViewId(WeChatId.SEARCH.id)
-        if (searchById.isNotEmpty()) {
-            return searchById.first()
-        }
-        
+
         // 方法2: 通过文本查找
-        val searchByText = rootNode.findAccessibilityNodeInfosByText("搜索")
-        if (searchByText.isNotEmpty()) {
-            return searchByText.first()
+        var searchByText: List<AccessibilityNodeInfo>? = null
+        try {
+            searchByText = rootNode.findAccessibilityNodeInfosByText("搜索")
+            if (searchByText.isNotEmpty()) {
+                return searchByText.first()
+            }
+        } finally {
+            searchByText?.safeRecycleAll()
         }
-        
-        // 方法3: 通过英文文本查找
-        val searchByEngText = rootNode.findAccessibilityNodeInfosByText("Search")
-        if (searchByEngText.isNotEmpty()) {
-            return searchByEngText.first()
-        }
-        
-        return null
+
+        // 方法3: 查找可点击的搜索图标
+        return findClickableNodeByContent(rootNode, "搜索", "Search")
     }
-    
-    /**
-     * 查找输入框
-     */
+
     private fun findInputField(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        // 方法1: 通过ViewId查找
-        val inputById = rootNode.findAccessibilityNodeInfosByViewId(WeChatId.INPUT.id)
-        if (inputById.isNotEmpty()) {
-            return inputById.first()
+        // 方法1: 通过ViewId查找（最快）
+        var inputById: List<AccessibilityNodeInfo>? = null
+        try {
+            inputById = rootNode.findAccessibilityNodeInfosByViewId(WeChatId.INPUT.id)
+            if (inputById.isNotEmpty()) {
+                return inputById.first()
+            }
+        } finally {
+            inputById?.safeRecycleAll()
         }
-        
+
         // 方法2: 查找可编辑节点
         val editableNodes = mutableListOf<AccessibilityNodeInfo>()
         findEditableNodes(rootNode, editableNodes)
         if (editableNodes.isNotEmpty()) {
             return editableNodes.first()
         }
-        
-        // 方法3: 通过文本查找
-        val inputByText = rootNode.findAccessibilityNodeInfosByText("搜索")
-        if (inputByText.isNotEmpty()) {
-            return inputByText.first()
-        }
-        
+
         return null
     }
-    
-    /**
-     * 查找联系人列表
-     */
-    private fun findContactList(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+
+    private fun findSearchResult(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
         // 方法1: 通过ViewId查找
-        val listById = rootNode.findAccessibilityNodeInfosByViewId(WeChatId.LIST.id)
-        if (listById.isNotEmpty()) {
-            return listById.first()
+        var listById: List<AccessibilityNodeInfo>? = null
+        try {
+            listById = rootNode.findAccessibilityNodeInfosByViewId(WeChatId.LIST.id)
+            if (listById.isNotEmpty()) {
+                return listById.first()
+            }
+        } finally {
+            listById?.safeRecycleAll()
         }
-        
+
         // 方法2: 查找列表类型的节点
-        return findListViewNode(rootNode)
+        return findFirstClickableListItem(rootNode)
     }
-    
-    /**
-     * 查找更多按钮
-     */
+
     private fun findMoreButton(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        // 方法1: 通过ViewId查找
-        val moreById = rootNode.findAccessibilityNodeInfosByViewId(WeChatId.MORE.id)
-        if (moreById.isNotEmpty()) {
-            return moreById.first()
+        // 方法1: 通过ViewId查找（最快）
+        var moreById: List<AccessibilityNodeInfo>? = null
+        try {
+            moreById = rootNode.findAccessibilityNodeInfosByViewId(WeChatId.MORE.id)
+            if (moreById.isNotEmpty()) {
+                return moreById.first()
+            }
+        } finally {
+            moreById?.safeRecycleAll()
         }
-        
+
         // 方法2: 通过文本查找
-        val moreByText = rootNode.findAccessibilityNodeInfosByText("更多")
-        if (moreByText.isNotEmpty()) {
-            return moreByText.first()
+        var moreByText: List<AccessibilityNodeInfo>? = null
+        try {
+            moreByText = rootNode.findAccessibilityNodeInfosByText("更多")
+            if (moreByText.isNotEmpty()) {
+                return moreByText.first()
+            }
+        } finally {
+            moreByText?.safeRecycleAll()
         }
-        
+
+        // 方法3: 查找可点击的更多图标
+        return findClickableNodeByContent(rootNode, "更多", "More")
+    }
+
+    private fun findCallButton(): AccessibilityNodeInfo? {
+        val callText = WeChatData.findText(true)
+        Log.d(TAG, "查找通话按钮: $callText")
+
+        var options: List<AccessibilityNodeInfo>? = null
+        try {
+            options = rootInActiveWindow?.findAccessibilityNodeInfosByText(callText)
+            if (options != null && options.isNotEmpty()) {
+                val callNode = options.first()
+                Log.d(TAG, "找到通话按钮: $callText, 可点击: ${callNode.isClickable}")
+                return callNode
+            }
+        } finally {
+            options?.safeRecycleAll()
+        }
+
         return null
     }
-    
-    /**
-     * 查找通话菜单
-     */
-    private fun findCallMenu(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        val callText = WeChatData.findText(false)
-        val callNode = rootNode.findAccessibilityNodeInfosByText(callText)
-        if (callNode.isNotEmpty()) {
-            return callNode.first()
-        }
-        
-        return null
-    }
-    
-    /**
-     * 查找确认按钮
-     */
+
     private fun findConfirmButton(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
         // 查找确认、确定等按钮
-        val confirmTexts = listOf("确定", "确认", "OK", "Confirm")
-        
+        val confirmTexts = listOf("视频通话", "语音通话", "确定", "确认", "呼叫", "OK", "Confirm")
+
         for (text in confirmTexts) {
-            val nodes = rootNode.findAccessibilityNodeInfosByText(text)
-            if (nodes.isNotEmpty()) {
-                return nodes.first()
+            var nodes: List<AccessibilityNodeInfo>? = null
+            try {
+                nodes = rootNode.findAccessibilityNodeInfosByText(text)
+                if (nodes.isNotEmpty()) {
+                    for (node in nodes) {
+                        if (node.isClickable) {
+                            return node
+                        }
+                    }
+                }
+            } finally {
+                nodes?.safeRecycleAll()
             }
         }
-        
         return null
     }
-    
-    /**
-     * 查找列表视图节点
-     */
-    private fun findListViewNode(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        if (node == null) return null
-        
-        // 检查节点是否可能是列表
-        if (node.childCount > 0 && node.isScrollable) {
+
+    private fun findNodeById(rootNode: AccessibilityNodeInfo, viewId: String): AccessibilityNodeInfo? {
+        var nodes: List<AccessibilityNodeInfo>? = null
+        try {
+            nodes = rootNode.findAccessibilityNodeInfosByViewId(viewId)
+            return if (nodes.isNotEmpty()) nodes.first() else null
+        } finally {
+            nodes?.safeRecycleAll()
+        }
+    }
+
+    private fun findNodeByText(rootNode: AccessibilityNodeInfo, text: String): AccessibilityNodeInfo? {
+        val nodes = rootNode.findAccessibilityNodeInfosByText(text)
+        return if (nodes.isNotEmpty()) nodes.first() else null
+    }
+
+    private fun findNodeByDesc(rootNode: AccessibilityNodeInfo, desc: String): AccessibilityNodeInfo? {
+        return findNodeByDescRecursive(rootNode, desc, 0, 20)
+    }
+
+    private fun findNodeByDescRecursive(node: AccessibilityNodeInfo?, desc: String, currentDepth: Int, maxDepth: Int): AccessibilityNodeInfo? {
+        if (node == null || currentDepth > maxDepth) return null
+
+        if (node.contentDescription?.toString()?.contains(desc) == true) {
             return node
         }
-        
-        // 递归检查子节点
+
         for (i in 0 until node.childCount) {
-            val child = node.getChild(i)
-            val result = findListViewNode(child)
-            if (result != null) {
-                return result
-            }
+            val result = findNodeByDescRecursive(node.getChild(i), desc, currentDepth + 1, maxDepth)
+            if (result != null) return result
         }
-        
         return null
     }
-    
-    /**
-     * 查找可编辑节点
-     */
+
     private fun findEditableNodes(node: AccessibilityNodeInfo?, result: MutableList<AccessibilityNodeInfo>) {
-        if (node == null) return
-        
+        findEditableNodesRecursive(node, result, 0, 20)
+    }
+
+    private fun findEditableNodesRecursive(node: AccessibilityNodeInfo?, result: MutableList<AccessibilityNodeInfo>, currentDepth: Int, maxDepth: Int) {
+        if (node == null || currentDepth > maxDepth) return
+
         if (node.isEditable) {
             result.add(node)
         }
-        
+
         for (i in 0 until node.childCount) {
-            findEditableNodes(node.getChild(i), result)
+            findEditableNodesRecursive(node.getChild(i), result, currentDepth + 1, maxDepth)
         }
     }
-    
-    /**
-     * 根据文本查找节点
-     */
-    private fun findNodeByText(node: AccessibilityNodeInfo?, text: String): Boolean {
-        if (node == null) return false
-        
-        if (node.text?.toString()?.contains(text) == true) {
-            return true
-        }
-        
-        if (node.contentDescription?.toString()?.contains(text) == true) {
-            return true
-        }
-        
-        for (i in 0 until node.childCount) {
-            if (findNodeByText(node.getChild(i), text)) {
-                return true
+
+    private fun findFirstClickableListItem(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+        return findFirstClickableListItemRecursive(node, 0, 20)
+    }
+
+    private fun findFirstClickableListItemRecursive(node: AccessibilityNodeInfo?, currentDepth: Int, maxDepth: Int): AccessibilityNodeInfo? {
+        if (node == null || currentDepth > maxDepth) return null
+
+        if (node.isClickable && node.isEnabled) {
+            val className = node.className?.toString() ?: ""
+            if (!className.contains("Tab") && !className.contains("Bottom")) {
+                return node
             }
         }
-        
-        return false
+
+        for (i in 0 until node.childCount) {
+            val result = findFirstClickableListItemRecursive(node.getChild(i), currentDepth + 1, maxDepth)
+            if (result != null) return result
+        }
+        return null
     }
-    
-    /**
-     * 点击节点
-     */
+
+    private fun findClickableNodeByContent(rootNode: AccessibilityNodeInfo, vararg texts: String): AccessibilityNodeInfo? {
+        for (text in texts) {
+            val nodes = rootNode.findAccessibilityNodeInfosByText(text)
+            for (node in nodes) {
+                if (node.isClickable) {
+                    return node
+                }
+            }
+        }
+        return null
+    }
+
+    // ==================== 节点操作扩展 ====================
+
     private fun AccessibilityNodeInfo.click(): Boolean {
-        if (isClickable) {
-            return performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        return if (isClickable) {
+            performAction(AccessibilityNodeInfo.ACTION_CLICK)
         } else {
-            return parent?.click() == true
+            parent?.click() == true
         }
     }
-    
-    /**
-     * 输入文本
-     */
+
     private fun AccessibilityNodeInfo.input(text: String): Boolean {
-        if (isEditable) {
-            val arguments = Bundle()
-            arguments.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
-            return performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+        return if (isEditable) {
+            val args = Bundle()
+            args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
+            performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
         } else {
-            return parent?.input(text) == true
+            parent?.input(text) == true
         }
     }
-    
-    override fun onInterrupt() {
-        Log.d(TAG, "无障碍服务被中断")
-        WeChatData.updateIndex(0)
-        isProcessing = false
+
+    // ==================== 错误处理和重试 ====================
+
+    private fun handleError(backToStep: Int) {
+        retryCount++
+        if (retryCount >= MAX_RETRY_COUNT) {
+            Log.e(TAG, "重试次数达到上限，重置流程")
+            resetAndStop()
+        } else {
+            Log.d(TAG, "回到步骤$backToStep (重试 $retryCount/$MAX_RETRY_COUNT)")
+            WeChatData.updateIndex(backToStep)
+            scheduleNextStep(500)
+        }
     }
-    
+
+    private fun handleRetry(message: String, backToStep: Int) {
+        Log.d(TAG, "$message，准备重试")
+        handleError(backToStep)
+    }
+
+    private fun incrementNavigationAttempts() {
+        navigationAttempts++
+    }
+
+    private fun resetRetryAndNavigation() {
+        retryCount = 0
+        navigationAttempts = 0
+    }
+
+    private fun resetAndStop() {
+        WeChatData.updateIndex(0)
+        WeChatData.updateValue("")
+        resetRetryAndNavigation()
+        cancelNextStep()
+    }
+
+    // ==================== 生命周期 ====================
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         Log.d(TAG, "无障碍服务已连接")
     }
-    
+
+    override fun onInterrupt() {
+        Log.d(TAG, "无障碍服务被中断")
+        resetAndStop()
+        isProcessing.set(false)
+        cancelNextStep()
+    }
+
     override fun onUnbind(intent: Intent?): Boolean {
         Log.d(TAG, "无障碍服务已断开")
+        resetAndStop()
+        isProcessing.set(false)
+        cancelNextStep()
+        serviceScope.cancel()
         return super.onUnbind(intent)
+    }
+
+    // ==================== isProcessing辅助函数 ====================
+
+    private fun setProcessing(value: Boolean) {
+        isProcessing.set(value)
+    }
+
+    // ==================== 主动触发下一步 ====================
+
+    private fun scheduleNextStep(delayMs: Long = 300) {
+        cancelNextStep()
+        nextStepRunnable = Runnable {
+            if (!isProcessing.get() && WeChatData.index > 0 && WeChatData.index <= 7) {
+                Log.d(TAG, ">>> 主动触发步骤 ${WeChatData.index} <<<")
+                val currentActivity = rootInActiveWindow?.packageName?.toString() ?: ""
+                when (WeChatData.index) {
+                    1 -> processStep1(currentActivity)
+                    2 -> processStep2(currentActivity)
+                    3 -> processStep3(currentActivity)
+                    4 -> processStep4(currentActivity)
+                    5 -> processStep5(currentActivity)
+                    6 -> processStep6(currentActivity)
+                    7 -> processStep7(currentActivity)
+                }
+            }
+        }
+        mainHandler.postDelayed(nextStepRunnable!!, delayMs)
+    }
+
+    private fun cancelNextStep() {
+        nextStepRunnable?.let {
+            mainHandler.removeCallbacks(it)
+            nextStepRunnable = null
+        }
+    }
+
+    private fun performClick(x: Float, y: Float) {
+        val path = android.graphics.Path()
+        path.moveTo(x, y)
+        val stroke = android.accessibilityservice.GestureDescription.StrokeDescription(path, 0, 100, false)
+        val gesture = android.accessibilityservice.GestureDescription.Builder()
+            .addStroke(stroke)
+            .build()
+        dispatchGesture(gesture, null, null)
     }
 }
