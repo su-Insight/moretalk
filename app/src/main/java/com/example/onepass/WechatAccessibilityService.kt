@@ -170,22 +170,24 @@ class WechatAccessibilityService : AccessibilityService() {
             isProcessing = true
             try {
                 delay(500)
-                
+
                 val rootNode = rootInActiveWindow
                 if (rootNode == null) {
                     Log.d(TAG, "rootNode为空，等待下一次事件")
                     return@launch
                 }
-                
+
                 // 查找输入框
                 val inputNode = findInputField(rootNode)
                 if (inputNode != null) {
                     Log.d(TAG, "输入联系人昵称: ${WeChatData.value}")
                     val result = inputNode.input(WeChatData.value)
                     if (result) {
-                        Log.d(TAG, "输入成功")
-                        delay(1000)
+                        Log.d(TAG, "输入成功，等待搜索结果出现")
+                        // 增加延迟，等待搜索结果加载完成
+                        delay(1500)
                         WeChatData.updateIndex(4)
+                        Log.d(TAG, ">>> 进入步骤4: 选择联系人 <<<")
                     } else {
                         Log.d(TAG, "输入失败，重新尝试")
                     }
@@ -210,27 +212,28 @@ class WechatAccessibilityService : AccessibilityService() {
             isProcessing = true
             try {
                 delay(500)
-                
+
                 val rootNode = rootInActiveWindow
                 if (rootNode == null) {
                     Log.d(TAG, "rootNode为空，等待下一次事件")
                     return@launch
                 }
-                
-                // 查找联系人列表
+
+                // 查找联系人列表（第一个搜索结果）
                 val contactNode = findContactList(rootNode)
                 if (contactNode != null) {
                     Log.d(TAG, "选择联系人")
                     contactNode.click()
                     delay(800)
                     WeChatData.updateIndex(5)
+                    Log.d(TAG, ">>> 进入步骤5: 点击更多按钮 <<<")
                 } else {
-                    Log.d(TAG, "未找到联系人，返回步骤3")
-                    WeChatData.updateIndex(3)
+                    Log.d(TAG, "未找到联系人列表，搜索结果可能还未出现，保持步骤4继续等待")
+                    // 不返回步骤3，保持index为4继续等待新事件
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "处理步骤4失败", e)
-                WeChatData.updateIndex(3)
+                // 不返回步骤3，保持index为4继续等待
             } finally {
                 isProcessing = false
             }
