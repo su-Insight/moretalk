@@ -109,7 +109,7 @@ class AddContactActivity : AppCompatActivity() {
     
     private fun loadContactImage(imagePath: String) {
         try {
-            val bitmap = android.graphics.BitmapFactory.decodeFile(imagePath)
+            val bitmap = decodeSampledBitmapFromFile(imagePath, 400, 400)
             if (bitmap != null) {
                 contactImage.setImageBitmap(bitmap)
                 Log.d(TAG, "联系人头像加载成功")
@@ -223,9 +223,13 @@ class AddContactActivity : AppCompatActivity() {
             REQUEST_TAKE_PHOTO -> {
                 if (resultCode == RESULT_OK) {
                     currentPhotoPath?.let { path ->
-                        val bitmap = android.graphics.BitmapFactory.decodeFile(path)
-                        contactImage.setImageBitmap(bitmap)
-                        Toast.makeText(this, "拍照成功", Toast.LENGTH_SHORT).show()
+                        val bitmap = decodeSampledBitmapFromFile(path, 800, 800)
+                        if (bitmap != null) {
+                            contactImage.setImageBitmap(bitmap)
+                            Toast.makeText(this, "拍照成功", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "拍照失败", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
@@ -234,13 +238,17 @@ class AddContactActivity : AppCompatActivity() {
                     val selectedImage: Uri = data.data!!
                     try {
                         val inputStream = contentResolver.openInputStream(selectedImage)
-                        val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
-                        contactImage.setImageBitmap(bitmap)
-                        
-                        // 保存选择的图片到应用私有目录
-                        val savedPath = saveImageToPrivateStorage(bitmap)
-                        currentPhotoPath = savedPath
-                        Toast.makeText(this, "图片选择成功", Toast.LENGTH_SHORT).show()
+                        val bitmap = decodeSampledBitmapFromStream(inputStream, 800, 800)
+                        if (bitmap != null) {
+                            contactImage.setImageBitmap(bitmap)
+
+                            // 保存选择的图片到应用私有目录
+                            val savedPath = saveImageToPrivateStorage(bitmap)
+                            currentPhotoPath = savedPath
+                            Toast.makeText(this, "图片选择成功", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "图片加载失败", Toast.LENGTH_SHORT).show()
+                        }
                     } catch (e: Exception) {
                         Log.e(TAG, "加载图片失败", e)
                         Toast.makeText(this, "加载图片失败", Toast.LENGTH_SHORT).show()
@@ -302,10 +310,10 @@ class AddContactActivity : AppCompatActivity() {
                 Toast.makeText(this, "手机号不能为空", Toast.LENGTH_SHORT).show()
                 return
             }
-            
+
             // 手机号格式校验
             val phonePattern = "^1[3-9]\\d{9}$"
-            if (!android.util.Patterns.PHONE.matcher(phoneNumber).matches() && !phoneNumber.matches(phonePattern.toRegex())) {
+            if (!phoneNumber.matches(phonePattern.toRegex())) {
                 Toast.makeText(this, "请输入正确的手机号", Toast.LENGTH_SHORT).show()
                 return
             }
@@ -448,5 +456,75 @@ class AddContactActivity : AppCompatActivity() {
             Log.e(TAG, "保存联系人数据失败: ${e.message}", e)
             return false
         }
+    }
+
+    /**
+     * 计算合适的采样率
+     */
+    private fun calculateInSampleSize(
+        options: android.graphics.BitmapFactory.Options,
+        reqWidth: Int,
+        reqHeight: Int
+    ): Int {
+        val height = options.outHeight
+        val width = options.outWidth
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight = height / 2
+            val halfWidth = width / 2
+
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
+    /**
+     * 使用采样率从文件解码图片，减少内存占用
+     */
+    private fun decodeSampledBitmapFromFile(
+        path: String,
+        reqWidth: Int,
+        reqHeight: Int
+    ): android.graphics.Bitmap? {
+        val options = android.graphics.BitmapFactory.Options()
+        options.inJustDecodeBounds = true
+        android.graphics.BitmapFactory.decodeFile(path, options)
+
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+
+        options.inJustDecodeBounds = false
+        return android.graphics.BitmapFactory.decodeFile(path, options)
+    }
+
+    /**
+     * 使用采样率从输入流解码图片，减少内存占用
+     */
+    private fun decodeSampledBitmapFromStream(
+        inputStream: java.io.InputStream?,
+        reqWidth: Int,
+        reqHeight: Int
+    ): android.graphics.Bitmap? {
+        if (inputStream == null) return null
+
+        val options = android.graphics.BitmapFactory.Options()
+        options.inJustDecodeBounds = true
+        android.graphics.BitmapFactory.decodeStream(inputStream, null, options)
+
+        // 重置输入流
+        try {
+            inputStream.reset()
+        } catch (e: Exception) {
+            // 如果不支持reset，关闭并返回null
+            inputStream.close()
+            return null
+        }
+
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+
+        options.inJustDecodeBounds = false
+        return android.graphics.BitmapFactory.decodeStream(inputStream, null, options)
     }
 }

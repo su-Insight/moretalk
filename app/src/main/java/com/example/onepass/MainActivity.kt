@@ -15,7 +15,7 @@ import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.util.Log
+import com.example.onepass.Logger
 import android.view.View
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -128,22 +128,22 @@ class MainActivity : AppCompatActivity() {
             fetchWeather(currentCity)
         }
         
-        Log.d(TAG, "权限请求结果 - 位置: ${fineLocation || coarseLocation}, 相机: $camera, 存储: ${readStorage || writeStorage}, 电话: $callPhone")
+        Logger.d("权限请求结果 - 位置: ${fineLocation || coarseLocation}, 相机: $camera, 存储: ${readStorage || writeStorage}, 电话: $callPhone")
         
         // 权限请求完成后，延迟初始化TextToSpeech
         handler.postDelayed({
             if (!isTextToSpeechInitialized) {
-                Log.d(TAG, "开始延迟初始化TextToSpeech")
+                Logger.d("开始延迟初始化TextToSpeech")
                 initTextToSpeech()
             } else {
-                Log.d(TAG, "TextToSpeech已经初始化，跳过")
+                Logger.d("TextToSpeech已经初始化，跳过")
             }
         }, 1000)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(TAG, "onCreate 开始")
+        Logger.d("onCreate 开始")
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -153,16 +153,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         locationManager = LocationManager(this)
-        Log.d(TAG, "locationManager 初始化完成")
+        Logger.d("locationManager 初始化完成")
         
         // 不在onCreate中初始化TextToSpeech，而是在onResume中初始化
-        Log.d(TAG, "准备在onResume中初始化TextToSpeech")
+        Logger.d("准备在onResume中初始化TextToSpeech")
         
         initViews()
         updateDate()
         checkLocationPermissionAndFetchWeather()
         
-        handler.postDelayed(refreshRunnable, 30 * 60 * 1000)
+        handler.postDelayed(refreshRunnable, 30 * 60 * 1000) // 30分钟自动刷新
         Log.d(TAG, "onCreate 完成")
     }
 
@@ -455,7 +455,10 @@ class MainActivity : AppCompatActivity() {
         
         isRefreshing = true
         startRefreshAnimation()
-        
+
+        // 更新日期信息，确保播报时使用正确的日期
+        updateDate()
+
         if (currentCity == AppConfig.CITY) {
             getLocationAndFetchWeather(true)
         } else {
@@ -710,8 +713,8 @@ class MainActivity : AppCompatActivity() {
             weather.contains("阴") -> "☁️"
             weather.contains("暴雨") -> "⛈️"
             weather.contains("雷阵雨") -> "⛈️"
-            weather.contains("大雨") -> "�️"
-            weather.contains("中雨") -> "�️"
+            weather.contains("大雨") -> "🌧️"
+            weather.contains("中雨") -> "🌧️"
             weather.contains("小雨") -> "🌦️"
             weather.contains("雨") -> "🌧️"
             weather.contains("大雪") -> "❄️"
@@ -803,6 +806,13 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showContactActionDialog(contact: Contact) {
+        // 检查是否配置了任何操作
+        val hasAnyAction = contact.hasWechatVideo || contact.hasWechatVoice || contact.hasPhoneCall
+        if (!hasAnyAction) {
+            Toast.makeText(this, "该联系人未配置任何操作", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val dialogView = layoutInflater.inflate(R.layout.dialog_contact_actions, null)
         
         val contactName = dialogView.findViewById<TextView>(R.id.contactName)
@@ -954,15 +964,29 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun isAccessibilityServiceEnabled(): Boolean {
-        val serviceName = "com.example.onepass/com.example.onepass.WechatAccessibilityService"
+        // 获取完整的服务类名
+        val serviceComponentName = "${packageName}/${packageName}.WechatAccessibilityService"
+        // 也尝试短格式
+        val serviceComponentNameShort = "${packageName}/WechatAccessibilityService"
+        
         val enabledServices = android.provider.Settings.Secure.getString(
             contentResolver,
             android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
         )
+        
         Log.d(TAG, "已启用的无障碍服务: $enabledServices")
-        Log.d(TAG, "查找的服务名: $serviceName")
-        val result = enabledServices?.contains(serviceName) == true
-        Log.d(TAG, "检查结果: $result")
+        Log.d(TAG, "查找的服务名(完整): $serviceComponentName")
+        Log.d(TAG, "查找的服务名(短格式): $serviceComponentNameShort")
+        
+        // 检查两种格式
+        val result1 = enabledServices?.contains(serviceComponentName) == true
+        val result2 = enabledServices?.contains(serviceComponentNameShort) == true
+        val result = result1 || result2
+        
+        Log.d(TAG, "检查结果(完整): $result1")
+        Log.d(TAG, "检查结果(短格式): $result2")
+        Log.d(TAG, "最终检查结果: $result")
+        
         return result
     }
     

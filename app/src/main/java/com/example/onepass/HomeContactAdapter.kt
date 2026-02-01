@@ -55,14 +55,14 @@ class HomeContactAdapter(private val contacts: List<Contact>, private val listen
         
         if (!contact.imagePath.isNullOrEmpty()) {
             android.util.Log.d("HomeContactAdapter", "加载图片: ${contact.imagePath}")
-            
+
             // 检查文件是否存在
             val imageFile = java.io.File(contact.imagePath)
             if (imageFile.exists()) {
                 android.util.Log.d("HomeContactAdapter", "文件存在，大小: ${imageFile.length()} bytes")
-                
+
                 try {
-                    val bitmap = android.graphics.BitmapFactory.decodeFile(contact.imagePath)
+                    val bitmap = decodeSampledBitmapFromFile(contact.imagePath, scaledImageSize, scaledImageSize)
                     if (bitmap != null) {
                         holder.contactImage.setImageBitmap(bitmap)
                         android.util.Log.d("HomeContactAdapter", "图片加载成功")
@@ -89,4 +89,50 @@ class HomeContactAdapter(private val contacts: List<Contact>, private val listen
     }
 
     override fun getItemCount(): Int = contacts.size
+
+    /**
+     * 计算合适的采样率
+     */
+    private fun calculateInSampleSize(
+        options: android.graphics.BitmapFactory.Options,
+        reqWidth: Int,
+        reqHeight: Int
+    ): Int {
+        // 图片原始宽高
+        val height = options.outHeight
+        val width = options.outWidth
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight = height / 2
+            val halfWidth = width / 2
+
+            // 计算最大的采样率，使宽高都不超过目标值
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
+    /**
+     * 使用采样率解码图片，减少内存占用
+     */
+    private fun decodeSampledBitmapFromFile(
+        path: String,
+        reqWidth: Int,
+        reqHeight: Int
+    ): android.graphics.Bitmap? {
+        // 首先只解码图片的尺寸信息
+        val options = android.graphics.BitmapFactory.Options()
+        options.inJustDecodeBounds = true
+        android.graphics.BitmapFactory.decodeFile(path, options)
+
+        // 计算采样率
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+
+        // 使用采样率解码图片
+        options.inJustDecodeBounds = false
+        return android.graphics.BitmapFactory.decodeFile(path, options)
+    }
 }

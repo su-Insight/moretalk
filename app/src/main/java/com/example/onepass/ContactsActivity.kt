@@ -254,20 +254,19 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
         val adapter = object : android.widget.ArrayAdapter<Contact>(this, R.layout.item_search_result, results) {
             override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
                 val view = convertView ?: android.view.LayoutInflater.from(context).inflate(R.layout.item_search_result, parent, false)
-                
-                val contact = getItem(position)
-                if (contact != null) {
+
+                getItem(position)?.let { contact ->
                     view.findViewById<android.widget.TextView>(R.id.textContactName).text = "姓名: ${contact.name}"
                     view.findViewById<android.widget.TextView>(R.id.textContactWechat).text = "微信: ${contact.wechatNote}"
                     view.findViewById<android.widget.TextView>(R.id.textContactPhone).text = "手机: ${contact.phoneNumber}"
-                    
+
                     // 加载联系人头像
                     val avatarImage = view.findViewById<android.widget.ImageView>(R.id.imageContactAvatar)
                     if (!contact.imagePath.isNullOrEmpty()) {
                         val imageFile = java.io.File(contact.imagePath)
                         if (imageFile.exists()) {
                             try {
-                                val bitmap = android.graphics.BitmapFactory.decodeFile(contact.imagePath)
+                                val bitmap = decodeSampledBitmapFromFile(contact.imagePath, 200, 200)
                                 if (bitmap != null) {
                                     avatarImage.setImageBitmap(bitmap)
                                 } else {
@@ -283,8 +282,11 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
                     } else {
                         avatarImage.setImageResource(android.R.drawable.ic_menu_myplaces)
                     }
+                } ?: run {
+                    view.findViewById<android.widget.TextView>(R.id.textContactName).text = "未知联系人"
+                    view.findViewById<android.widget.ImageView>(R.id.imageContactAvatar).setImageResource(android.R.drawable.ic_menu_myplaces)
                 }
-                
+
                 return view
             }
         }
@@ -310,5 +312,46 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
         }
         
         builder.show()
+    }
+
+    /**
+     * 计算合适的采样率
+     */
+    private fun calculateInSampleSize(
+        options: android.graphics.BitmapFactory.Options,
+        reqWidth: Int,
+        reqHeight: Int
+    ): Int {
+        val height = options.outHeight
+        val width = options.outWidth
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight = height / 2
+            val halfWidth = width / 2
+
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
+    /**
+     * 使用采样率解码图片，减少内存占用
+     */
+    private fun decodeSampledBitmapFromFile(
+        path: String,
+        reqWidth: Int,
+        reqHeight: Int
+    ): android.graphics.Bitmap? {
+        val options = android.graphics.BitmapFactory.Options()
+        options.inJustDecodeBounds = true
+        android.graphics.BitmapFactory.decodeFile(path, options)
+
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+
+        options.inJustDecodeBounds = false
+        return android.graphics.BitmapFactory.decodeFile(path, options)
     }
 }
