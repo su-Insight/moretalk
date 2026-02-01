@@ -108,18 +108,18 @@ class WechatAccessibilityService : AccessibilityService() {
                     PageType.HOME -> {
                         Log.d(TAG, ">>> 已在微信首页，进入步骤2 <<<")
                         resetNavigationAttempts()
-                        WeChatData.updateIndex(2)
                         // 直接在步骤1中完成搜索点击，避免依赖新事件
                         val searchNode = findSearchIcon(rootNode)
                         if (searchNode != null) {
                             Log.d(TAG, "步骤1中直接点击搜索图标")
                             searchNode.click()
-                            // 延迟后更新到步骤3
+                            // 立即更新到步骤3，不再延迟
+                            Log.d(TAG, ">>> 进入步骤3: 输入联系人昵称 <<<")
+                            WeChatData.updateIndex(3)
+                            // 延迟后重置isProcessing，等待输入框出现
                             mainHandler.postDelayed({
-                                Log.d(TAG, ">>> 进入步骤3: 输入联系人昵称 <<<")
-                                WeChatData.updateIndex(3)
                                 isProcessing = false
-                            }, 800)
+                            }, 500)
                         } else {
                             Log.d(TAG, "未找到搜索图标")
                             isProcessing = false
@@ -129,18 +129,18 @@ class WechatAccessibilityService : AccessibilityService() {
                     PageType.CONTACTS -> {
                         Log.d(TAG, ">>> 在通讯录页面，直接进入步骤2 <<<")
                         resetNavigationAttempts()
-                        WeChatData.updateIndex(2)
                         // 直接在步骤1中完成搜索点击，避免依赖新事件
                         val searchNode = findSearchIcon(rootNode)
                         if (searchNode != null) {
                             Log.d(TAG, "步骤1中直接点击搜索图标")
                             searchNode.click()
-                            // 延迟后更新到步骤3
+                            // 立即更新到步骤3，不再延迟
+                            Log.d(TAG, ">>> 进入步骤3: 输入联系人昵称 <<<")
+                            WeChatData.updateIndex(3)
+                            // 延迟后重置isProcessing，等待输入框出现
                             mainHandler.postDelayed({
-                                Log.d(TAG, ">>> 进入步骤3: 输入联系人昵称 <<<")
-                                WeChatData.updateIndex(3)
                                 isProcessing = false
-                            }, 800)
+                            }, 500)
                         } else {
                             Log.d(TAG, "未找到搜索图标")
                             isProcessing = false
