@@ -146,14 +146,48 @@ class WechatAccessibilityService : AccessibilityService() {
                             rootNode?.safeRecycle()
                         }
                     }
-                    // 在搜索界面
+                    // 在搜索界面，清空搜索框并进入步骤3
                     isSearchPage(currentActivity) -> {
-                        Log.d(TAG, ">>> 在搜索界面，直接进入步骤3 <<<")
-                        resetRetryAndNavigation()
-                        WeChatData.updateIndex(3)
-                        setProcessing(false)
-                        scheduleNextStep(500)
-                        return@launch
+                        Log.d(TAG, ">>> 在搜索界面，清空搜索框并进入步骤3 <<<")
+                        var rootNode: AccessibilityNodeInfo? = null
+                        try {
+                            rootNode = rootInActiveWindow
+                            if (rootNode != null) {
+                                val inputNode = findInputField(rootNode)
+                                if (inputNode != null && inputNode.isEditable) {
+                                    val clearResult = clearInputField(inputNode)
+                                    if (clearResult) {
+                                        delay(200)
+                                        resetRetryAndNavigation()
+                                        WeChatData.updateIndex(3)
+                                        setProcessing(false)
+                                        scheduleNextStep(500)
+                                        return@launch
+                                    } else {
+                                        Log.e(TAG, "清空输入框失败，重试")
+                                        handleRetry("清空输入框失败", 1)
+                                        setProcessing(false)
+                                        return@launch
+                                    }
+                                } else {
+                                    Log.d(TAG, "未找到输入框，直接进入步骤3")
+                                    resetRetryAndNavigation()
+                                    WeChatData.updateIndex(3)
+                                    setProcessing(false)
+                                    scheduleNextStep(500)
+                                    return@launch
+                                }
+                            } else {
+                                Log.d(TAG, "rootNode为空，直接进入步骤3")
+                                resetRetryAndNavigation()
+                                WeChatData.updateIndex(3)
+                                setProcessing(false)
+                                scheduleNextStep(500)
+                                return@launch
+                            }
+                        } finally {
+                            rootNode?.safeRecycle()
+                        }
                     }
                     // 在聊天界面
                     isChatPage(currentActivity) -> {
@@ -806,6 +840,26 @@ class WechatAccessibilityService : AccessibilityService() {
         WeChatData.updateValue("")
         resetRetryAndNavigation()
         cancelNextStep()
+    }
+
+    private fun clearInputField(inputNode: AccessibilityNodeInfo): Boolean {
+        return try {
+            val text = inputNode.text?.toString() ?: ""
+            if (text.isNotEmpty()) {
+                Log.d(TAG, "清空输入框: $text")
+                val arguments = Bundle()
+                arguments.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "")
+                val result = inputNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+                Log.d(TAG, "清空输入框结果: $result")
+                result
+            } else {
+                Log.d(TAG, "输入框为空，无需清空")
+                true
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "清空输入框失败", e)
+            false
+        }
     }
 
     // ==================== 生命周期 ====================
