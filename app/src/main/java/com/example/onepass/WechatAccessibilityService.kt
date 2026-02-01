@@ -4,6 +4,8 @@ import android.accessibilityservice.AccessibilityService
 import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -20,7 +22,10 @@ class WechatAccessibilityService : AccessibilityService() {
     
     // 协程作用域
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
-    
+
+    // Handler用于延迟触发检查
+    private val mainHandler = Handler(Looper.getMainLooper())
+
     // 状态管理
     private var isProcessing = false // 是否正在处理
     private var navigationAttempts = 0 // 导航尝试次数
@@ -98,20 +103,52 @@ class WechatAccessibilityService : AccessibilityService() {
                 // 分析当前页面类型
                 val pageType = analyzeCurrentPage(rootNode)
                 Log.d(TAG, "当前页面类型: $pageType")
-                
+
                 when (pageType) {
                     PageType.HOME -> {
                         Log.d(TAG, ">>> 已在微信首页，进入步骤2 <<<")
                         resetNavigationAttempts()
                         WeChatData.updateIndex(2)
+                        // 直接在步骤1中完成搜索点击，避免依赖新事件
+                        val searchNode = findSearchIcon(rootNode)
+                        if (searchNode != null) {
+                            Log.d(TAG, "步骤1中直接点击搜索图标")
+                            searchNode.click()
+                            // 延迟后更新到步骤3
+                            mainHandler.postDelayed({
+                                Log.d(TAG, ">>> 进入步骤3: 输入联系人昵称 <<<")
+                                WeChatData.updateIndex(3)
+                                isProcessing = false
+                            }, 800)
+                        } else {
+                            Log.d(TAG, "未找到搜索图标")
+                            isProcessing = false
+                        }
+                        return@launch
                     }
                     PageType.CONTACTS -> {
                         Log.d(TAG, ">>> 在通讯录页面，直接进入步骤2 <<<")
                         resetNavigationAttempts()
                         WeChatData.updateIndex(2)
+                        // 直接在步骤1中完成搜索点击，避免依赖新事件
+                        val searchNode = findSearchIcon(rootNode)
+                        if (searchNode != null) {
+                            Log.d(TAG, "步骤1中直接点击搜索图标")
+                            searchNode.click()
+                            // 延迟后更新到步骤3
+                            mainHandler.postDelayed({
+                                Log.d(TAG, ">>> 进入步骤3: 输入联系人昵称 <<<")
+                                WeChatData.updateIndex(3)
+                                isProcessing = false
+                            }, 800)
+                        } else {
+                            Log.d(TAG, "未找到搜索图标")
+                            isProcessing = false
+                        }
+                        return@launch
                     }
                     PageType.ME -> {
-                        Log.d(TAG, ">>> 在‘我的’页面，尝试导航到首页 <<<")
+                        Log.d(TAG, ">>> 在'我的'页面，尝试导航到首页 <<<")
                         navigateFromMePage(rootNode)
                     }
                     PageType.OTHER -> {
