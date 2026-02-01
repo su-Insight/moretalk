@@ -179,32 +179,46 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
     private fun showSearchDialog() {
         Log.d(TAG, "显示搜索联系人对话框")
         
-        // 创建搜索对话框
-        val builder = android.app.AlertDialog.Builder(this)
-        builder.setTitle("搜索联系人")
+        val dialogView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_search_contact, null)
+        val editSearchInput = dialogView.findViewById<android.widget.EditText>(R.id.editSearchInput)
+        val btnCancel = dialogView.findViewById<android.widget.Button>(R.id.btnCancel)
+        val btnSearch = dialogView.findViewById<android.widget.Button>(R.id.btnSearch)
         
-        // 创建搜索输入框
-        val input = android.widget.EditText(this)
-        input.hint = "请输入姓名、微信备注或手机号"
-        builder.setView(input)
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
         
-        // 设置搜索按钮
-        builder.setPositiveButton("搜索") { dialog, which ->
-            val searchText = input.text.toString().trim()
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        btnSearch.setOnClickListener {
+            val searchText = editSearchInput.text.toString().trim()
             if (searchText.isNotEmpty()) {
+                dialog.dismiss()
                 searchContacts(searchText)
             } else {
                 android.widget.Toast.makeText(this, "请输入搜索关键词", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
         
-        // 设置取消按钮
-        builder.setNegativeButton("取消") { dialog, which ->
-            dialog.cancel()
+        editSearchInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                val searchText = editSearchInput.text.toString().trim()
+                if (searchText.isNotEmpty()) {
+                    dialog.dismiss()
+                    searchContacts(searchText)
+                } else {
+                    android.widget.Toast.makeText(this, "请输入搜索关键词", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                true
+            } else {
+                false
+            }
         }
         
-        // 显示对话框
-        builder.show()
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
     }
     
     private fun searchContacts(keyword: String) {
@@ -246,72 +260,91 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
     private fun showSearchResultsDialog(results: List<Contact>) {
         Log.d(TAG, "显示搜索结果对话框")
         
-        // 创建搜索结果对话框
-        val builder = android.app.AlertDialog.Builder(this)
-        builder.setTitle("搜索结果 (${results.size} 个)")
+        val dialogView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_search_results, null)
+        val textTitle = dialogView.findViewById<android.widget.TextView>(R.id.textTitle)
+        val textCount = dialogView.findViewById<android.widget.TextView>(R.id.textCount)
+        val recyclerViewSearchResults = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recyclerViewSearchResults)
+        val btnClose = dialogView.findViewById<android.widget.Button>(R.id.btnClose)
         
-        // 使用自定义适配器显示结果
-        val adapter = object : android.widget.ArrayAdapter<Contact>(this, R.layout.item_search_result, results) {
-            override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
-                val view = convertView ?: android.view.LayoutInflater.from(context).inflate(R.layout.item_search_result, parent, false)
+        textTitle.text = "搜索结果"
+        textCount.text = "${results.size} 个"
+        
+        val adapter = SearchResultsAdapter(results)
+        
+        recyclerViewSearchResults.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        recyclerViewSearchResults.adapter = adapter
+        
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+    }
 
-                getItem(position)?.let { contact ->
-                    view.findViewById<android.widget.TextView>(R.id.textContactName).text = "姓名: ${contact.name}"
-                    view.findViewById<android.widget.TextView>(R.id.textContactWechat).text = "微信: ${contact.wechatNote}"
-                    view.findViewById<android.widget.TextView>(R.id.textContactPhone).text = "手机: ${contact.phoneNumber}"
-
-                    // 加载联系人头像
-                    val avatarImage = view.findViewById<android.widget.ImageView>(R.id.imageContactAvatar)
-                    if (!contact.imagePath.isNullOrEmpty()) {
-                        val imageFile = java.io.File(contact.imagePath)
-                        if (imageFile.exists()) {
-                            try {
-                                val bitmap = decodeSampledBitmapFromFile(contact.imagePath, 200, 200)
-                                if (bitmap != null) {
-                                    avatarImage.setImageBitmap(bitmap)
-                                } else {
-                                    avatarImage.setImageResource(android.R.drawable.ic_menu_myplaces)
-                                }
-                            } catch (e: Exception) {
-                                Log.e(TAG, "加载头像失败: ${e.message}")
-                                avatarImage.setImageResource(android.R.drawable.ic_menu_myplaces)
-                            }
+    private inner class SearchResultsAdapter(private val contacts: List<Contact>) : 
+        androidx.recyclerview.widget.RecyclerView.Adapter<SearchResultsAdapter.ViewHolder>() {
+        
+        inner class ViewHolder(view: android.view.View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
+            val textName: android.widget.TextView = view.findViewById(R.id.textContactName)
+            val textWechat: android.widget.TextView = view.findViewById(R.id.textContactWechat)
+            val textPhone: android.widget.TextView = view.findViewById(R.id.textContactPhone)
+            val imageAvatar: android.widget.ImageView = view.findViewById(R.id.imageContactAvatar)
+        }
+        
+        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
+            val view = android.view.LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_search_result, parent, false)
+            return ViewHolder(view)
+        }
+        
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val contact = contacts[position]
+            holder.textName.text = "姓名: ${contact.name}"
+            holder.textWechat.text = "微信: ${contact.wechatNote}"
+            holder.textPhone.text = "手机: ${contact.phoneNumber}"
+            
+            if (!contact.imagePath.isNullOrEmpty()) {
+                val imageFile = java.io.File(contact.imagePath)
+                if (imageFile.exists()) {
+                    try {
+                        val bitmap = decodeSampledBitmapFromFile(contact.imagePath, 200, 200)
+                        if (bitmap != null) {
+                            holder.imageAvatar.setImageBitmap(bitmap)
                         } else {
-                            avatarImage.setImageResource(android.R.drawable.ic_menu_myplaces)
+                            holder.imageAvatar.setImageResource(android.R.drawable.ic_menu_myplaces)
                         }
-                    } else {
-                        avatarImage.setImageResource(android.R.drawable.ic_menu_myplaces)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "加载头像失败: ${e.message}")
+                        holder.imageAvatar.setImageResource(android.R.drawable.ic_menu_myplaces)
                     }
-                } ?: run {
-                    view.findViewById<android.widget.TextView>(R.id.textContactName).text = "未知联系人"
-                    view.findViewById<android.widget.ImageView>(R.id.imageContactAvatar).setImageResource(android.R.drawable.ic_menu_myplaces)
+                } else {
+                    holder.imageAvatar.setImageResource(android.R.drawable.ic_menu_myplaces)
                 }
-
-                return view
+            } else {
+                holder.imageAvatar.setImageResource(android.R.drawable.ic_menu_myplaces)
+            }
+            
+            holder.itemView.setOnClickListener {
+                Log.d(TAG, "点击搜索结果: ${contact.name}")
+                val intent = android.content.Intent(this@ContactsActivity, AddContactActivity::class.java)
+                intent.putExtra("contact_id", contact.id)
+                intent.putExtra("contact_name", contact.name)
+                intent.putExtra("contact_phone", contact.phoneNumber)
+                intent.putExtra("contact_wechat", contact.wechatNote)
+                intent.putExtra("contact_image", contact.imagePath)
+                intent.putExtra("contact_video", contact.hasWechatVideo)
+                intent.putExtra("contact_voice", contact.hasWechatVoice)
+                intent.putExtra("contact_call", contact.hasPhoneCall)
+                startActivity(intent)
             }
         }
         
-        builder.setAdapter(adapter) { dialog, which ->
-            val selectedContact = results[which]
-            Log.d(TAG, "选择了搜索结果: ${selectedContact.name}")
-            // 启动添加联系人页面并传递联系人信息
-            val intent = android.content.Intent(this, AddContactActivity::class.java)
-            intent.putExtra("contact_id", selectedContact.id)
-            intent.putExtra("contact_name", selectedContact.name)
-            intent.putExtra("contact_phone", selectedContact.phoneNumber)
-            intent.putExtra("contact_wechat", selectedContact.wechatNote)
-            intent.putExtra("contact_image", selectedContact.imagePath)
-            intent.putExtra("contact_video", selectedContact.hasWechatVideo)
-            intent.putExtra("contact_voice", selectedContact.hasWechatVoice)
-            intent.putExtra("contact_call", selectedContact.hasPhoneCall)
-            startActivity(intent)
-        }
-        
-        builder.setNegativeButton("关闭") { dialog, which ->
-            dialog.cancel()
-        }
-        
-        builder.show()
+        override fun getItemCount(): Int = contacts.size
     }
 
     /**
