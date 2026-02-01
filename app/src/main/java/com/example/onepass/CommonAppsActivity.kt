@@ -283,7 +283,7 @@ class CommonAppsActivity : AppCompatActivity() {
                 
                 // 设置已启用应用的背景色
                 if (app.selected) {
-                    itemView.setBackgroundColor(itemView.resources.getColor(android.R.color.holo_blue_light, null))
+                    itemView.setBackgroundColor(itemView.resources.getColor(R.color.app_selected_bg, null))
                 } else {
                     itemView.setBackgroundColor(itemView.resources.getColor(android.R.color.transparent, null))
                 }
@@ -306,7 +306,7 @@ class CommonAppsActivity : AppCompatActivity() {
                         // 选择应用
                         app.selected = true
                         check.isChecked = true
-                        itemView.setBackgroundColor(itemView.resources.getColor(android.R.color.holo_blue_light, null))
+                        itemView.setBackgroundColor(itemView.resources.getColor(R.color.app_selected_bg, null))
                         Log.d(TAG, "应用点击: ${app.label}, 选中状态: true")
                     }
                 }
@@ -322,7 +322,7 @@ class CommonAppsActivity : AppCompatActivity() {
                             Log.d(TAG, "应用切换: ${app.label}, 已达到最大选择数量")
                             return@setOnCheckedChangeListener
                         }
-                        itemView.setBackgroundColor(itemView.resources.getColor(android.R.color.holo_blue_light, null))
+                        itemView.setBackgroundColor(itemView.resources.getColor(R.color.app_selected_bg, null))
                     } else {
                         itemView.setBackgroundColor(itemView.resources.getColor(android.R.color.transparent, null))
                     }

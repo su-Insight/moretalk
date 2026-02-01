@@ -3,15 +3,19 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:layout_marginHorizontal="24dp"
+    android:layout_marginVertical="8dp"
+    android:background="@drawable/dialog_background"
     android:padding="24dp">
+
 
     <TextView
         android:id="@+id/contactName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="联系人名称"
-        android:textSize="20sp"
-        android:textColor="#333333"
+        android:textSize="24sp"
+        android:textColor="@color/text_primary"
         android:textStyle="bold"
         android:gravity="center"
         android:layout_marginBottom="24dp" />
@@ -26,23 +30,28 @@
         android:visibility="gone">
 
         <Button
-            android:id="@+id/btnWechatVideo"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="微信视频"
-            android:textColor="#ffffff"
-            android:background="@android:color/holo_blue_dark"
-            android:minHeight="48dp" />
+                android:id="@+id/btnWechatVideo"
+                android:layout_width="0dp"
+                android:layout_height="46dp"
+                android:layout_weight="1"
+                android:text="微信视频"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/bg_info_button"
+                android:stateListAnimator="@null" />
 
         <Button
-            android:id="@+id/btnPlayWechatVideo"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="▶"
-            android:textColor="#ffffff"
-            android:background="@android:color/holo_blue_light"
-            android:layout_marginStart="8dp" />
+                android:id="@+id/btnPlayWechatVideo"
+                android:layout_width="44dp"
+                android:layout_height="43dp"
+                android:text="▶"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/bg_play_button"
+                android:stateListAnimator="@null"
+                android:layout_marginStart="12dp" />
 
     </LinearLayout>
 
@@ -56,23 +65,28 @@
         android:visibility="gone">
 
         <Button
-            android:id="@+id/btnWechatVoice"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="微信语音"
-            android:textColor="#ffffff"
-            android:background="@android:color/holo_green_dark"
-            android:minHeight="48dp" />
+                android:id="@+id/btnWechatVoice"
+                android:layout_width="0dp"
+                android:layout_height="46dp"
+                android:layout_weight="1"
+                android:text="微信语音"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/bg_success_button"
+                android:stateListAnimator="@null" />
 
         <Button
-            android:id="@+id/btnPlayWechatVoice"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="▶"
-            android:textColor="#ffffff"
-            android:background="@android:color/holo_green_light"
-            android:layout_marginStart="8dp" />
+                android:id="@+id/btnPlayWechatVoice"
+                android:layout_width="44dp"
+                android:layout_height="43dp"
+                android:text="▶"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/bg_play_button"
+                android:stateListAnimator="@null"
+                android:layout_marginStart="12dp" />
 
     </LinearLayout>
 
@@ -86,23 +100,28 @@
         android:visibility="gone">
 
         <Button
-            android:id="@+id/btnPhoneCall"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="拨打电话"
-            android:textColor="#ffffff"
-            android:background="@android:color/holo_orange_dark"
-            android:minHeight="48dp" />
+                android:id="@+id/btnPhoneCall"
+                android:layout_width="0dp"
+                android:layout_height="46dp"
+                android:layout_weight="1"
+                android:text="拨打电话"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/bg_accent_button"
+                android:stateListAnimator="@null" />
 
         <Button
-            android:id="@+id/btnPlayPhoneCall"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="▶"
-            android:textColor="#ffffff"
-            android:background="@android:color/holo_orange_light"
-            android:layout_marginStart="8dp" />
+                android:id="@+id/btnPlayPhoneCall"
+                android:layout_width="44dp"
+                android:layout_height="43dp"
+                android:text="▶"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/bg_play_button"
+                android:stateListAnimator="@null"
+                android:layout_marginStart="12dp" />
 
     </LinearLayout>
 

@@ -1,5 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- 主色调 -->
+    <color name="primary">#6366F1</color>
+    <color name="primary_dark">#4F46E5</color>
+    <color name="primary_light">#818CF8</color>
+    
+    <!-- 次要色调 -->
+    <color name="secondary">#10B981</color>
+    <color name="secondary_dark">#059669</color>
+    <color name="secondary_light">#34D399</color>
+    
+    <!-- 强调色 -->
+    <color name="accent">#F59E0B</color>
+    <color name="accent_dark">#D97706</color>
+    <color name="accent_light">#FBBF24</color>
+    
+    <!-- 背景色 -->
+    <color name="background">#F8FAFC</color>
+    <color name="background_card">#FFFFFF</color>
+    <color name="background_elevated">#F1F5F9</color>
+    
+    <!-- 文本色 -->
+    <color name="text_primary">#1E293B</color>
+    <color name="text_secondary">#475569</color>
+    <color name="text_hint">#94A3B8</color>
+    <color name="text_disabled">#CBD5E1</color>
+    
+    <!-- 分隔线 -->
+    <color name="divider">#E2E8F0</color>
+    <color name="divider_light">#F1F5F9</color>
+    
+    <!-- 状态色 -->
+    <color name="success">#10B981</color>
+    <color name="warning">#F59E0B</color>
+    <color name="error">#EF4444</color>
+    <color name="info">#3B82F6</color>
+    
+    <!-- 阴影 -->
+    <color name="shadow_light">#00000008</color>
+    <color name="shadow_medium">#00000012</color>
+    <color name="shadow_dark">#00000018</color>
+    
+    <!-- 基础色 -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    
+    <!-- 渐变色 -->
+    <color name="gradient_start">#6366F1</color>
+    <color name="gradient_end">#8B5CF6</color>
+    
+    <!-- 应用选中背景色 -->
+    <color name="app_selected_bg">#E0E7FF</color>
 </resources>

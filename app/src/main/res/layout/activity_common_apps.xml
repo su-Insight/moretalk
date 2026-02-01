@@ -3,65 +3,65 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:paddingTop="48dp">
+    android:background="@color/background">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="?android:attr/colorBackground"
+        android:background="@drawable/search_box_background"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="16dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="8dp"
+        android:gravity="center_vertical"
         android:padding="8dp">
         
-        <LinearLayout
-            android:layout_width="match_parent"
+        <EditText
+                android:id="@+id/editSearch"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:hint="搜索应用"
+                android:background="@null"
+                android:clickable="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:textSize="16sp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:gravity="center_vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="8dp"/>
+        
+        <TextView
+            android:id="@+id/searchEmoji"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:background="@drawable/search_box_background"
-            android:gravity="center_vertical">
-            
-            <EditText
-                    android:id="@+id/editSearch"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:hint="搜索应用"
-                    android:background="@null"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:focusableInTouchMode="true"
-                    android:textSize="21sp"
-                    android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="8dp"/>
-            
-            <TextView
-                android:id="@+id/searchEmoji"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🔍"
-                android:textSize="26sp"
-                android:gravity="center"
-                android:paddingEnd="16dp"/>
-        </LinearLayout>
+            android:text="🔍"
+            android:textSize="24sp"
+            android:gravity="center"
+            android:paddingEnd="16dp"/>
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewApps"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_weight="1"
+        android:layout_marginTop="8dp"/>
 
     <Button
         android:id="@+id/btnDone"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="64dp"
         android:text="完成"
-        android:background="#4CAF50"
-        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/white"
+        android:background="@drawable/bg_primary_button"
         android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="16dp"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="16dp"
+        android:elevation="4dp"
+        android:stateListAnimator="@null"/>
 </LinearLayout>
