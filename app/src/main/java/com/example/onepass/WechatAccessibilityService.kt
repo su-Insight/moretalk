@@ -420,11 +420,46 @@ class WechatAccessibilityService : AccessibilityService() {
      * 检测是否在微信首页
      */
     private fun isHomePage(rootNode: AccessibilityNodeInfo): Boolean {
-        // 检测微信首页特征
-        val hasWechatTab = findNodeByText(rootNode, "微信") || findNodeByText(rootNode, "Chats")
-        val hasSearch = findNodeByText(rootNode, "搜索") || findNodeByText(rootNode, "Search")
-        
-        return hasWechatTab || hasSearch
+        // 检测微信首页特征：底部有4个标签（微信、通讯录、发现、我）
+        // 首先尝试查找搜索输入框（首页通常有搜索框）
+        val hasSearchInput = findInputField(rootNode) != null
+
+        // 检查底部标签数量（首页有4个标签）
+        val bottomTabNodes = findBottomTabs(rootNode)
+        val hasFourTabs = bottomTabNodes.size >= 3
+
+        Log.d(TAG, "首页检测 - 有搜索框: $hasSearchInput, 底部标签数: ${bottomTabNodes.size}")
+
+        return hasSearchInput || hasFourTabs
+    }
+
+    /**
+     * 查找底部所有可点击的标签
+     */
+    private fun findBottomTabs(rootNode: AccessibilityNodeInfo): List<AccessibilityNodeInfo> {
+        val result = mutableListOf<AccessibilityNodeInfo>()
+        findBottomClickableNodes(rootNode, result)
+        return result
+    }
+
+    /**
+     * 递归查找底部可点击的节点（底部标签）
+     */
+    private fun findBottomClickableNodes(node: AccessibilityNodeInfo?, result: MutableList<AccessibilityNodeInfo>) {
+        if (node == null) return
+
+        val rect = Rect()
+        node.getBoundsInScreen(rect)
+        val screenHeight = screenHeight()
+
+        // 如果节点在屏幕下半部分（可能是底部标签区域）且可点击
+        if (rect.top > screenHeight * 0.6 && node.isClickable) {
+            result.add(node)
+        }
+
+        for (i in 0 until node.childCount) {
+            findBottomClickableNodes(node.getChild(i), result)
+        }
     }
     
     /**
