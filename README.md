@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="200" height="200" alt="MoreTalk Logo" src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" />
+<img width="150" height="150" alt="MoreTalk Logo" src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" />
 
 <div style="border: 2px solid #3B82F6; padding: 20px; margin: 20px; display: inline-block; clip-path: polygon(0 0, 15% 0, 15% 5%, 85% 5%, 85% 0, 100% 0, 100% 100%, 85% 100%, 85% 95%, 15% 95%, 15% 100%, 0 100%);">
     <h1 style="margin: 0;">MoreTalk 「墨谈」</h1>
@@ -31,7 +31,6 @@
 * **💬 自动化智慧拨号**：底层无障碍服务自动模拟点击微信菜单、弹出框及确认按钮，实现全自动化拨号。
 * **🌤️ 全自动语音天气**：支持静默定位刷新，整点自动语音播报，让长辈不用看图也能知晓冷暖。
 * **📅 大字农历日历**：首页醒目标注农历与阳历日期，完全贴合中国长辈的生活习惯。
-* **🚫 安全零冗余**：彻底移除“扫一扫”、“付款码”等功能，保障资金安全并简化视觉。
 
 ---
 
@@ -94,7 +93,7 @@
 * **构建安装**：在 Android Studio 中打开项目，等待 Gradle 同步，点击 Run 'app' 安装至真机（无障碍服务需真机环境）。
 
 ### 2. 下载构建产物 (APK)
-* [点击此处下载最新正式版 APK (v1.0.0)](你的链接地址)
+* [点击此处下载最新正式版 APK (v1.0.0)]([你的链接地址](https://github.com/su-Insight/MoreTalk/releases/tag/v1.0.0))
 
 ### 3. 关键配置（家属必看 ⚠️）
 为了保证应用能顺畅控制微信，请务必帮长辈完成以下手动设置：
