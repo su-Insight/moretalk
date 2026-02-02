@@ -83,6 +83,14 @@
 
 ---
 
+## 🌐运行界面-测试机型（MI 12s）
+<img src="https://github.com/user-attachments/assets/d62c2c73-cf92-419a-91a1-e673848a0ca0" height="500" />
+<img src="https://github.com/user-attachments/assets/7c9c4774-0199-4b22-acf4-bd27d95a5600" height="500" />
+<img src="https://github.com/user-attachments/assets/484d42b2-7a1c-447f-97e8-4dbb50ead0a9" height="500" />
+<img src="https://github.com/user-attachments/assets/8d4a131a-3a32-4ec9-82eb-db50460ded91" height="500" />
+<img src="https://github.com/user-attachments/assets/2ffa8571-e928-4100-b63c-5a5999df2102" height="500" />
+<img src="https://github.com/user-attachments/assets/5e3575f7-99ec-48c6-a6d7-054d1b5e60a4" height="500" />
+
 ## 🚀 部署与安装说明
 
 ### 1. 开发者部署
