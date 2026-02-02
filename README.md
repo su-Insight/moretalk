@@ -93,7 +93,7 @@
 * **构建安装**：在 Android Studio 中打开项目，等待 Gradle 同步，点击 Run 'app' 安装至真机（无障碍服务需真机环境）。
 
 ### 2. 下载构建产物 (APK)
-* [点击此处下载最新正式版 APK (v1.0.0)]([你的链接地址](https://github.com/su-Insight/MoreTalk/releases/tag/v1.0.0))
+* [点击此处下载最新正式版 APK (v1.0.0)](https://github.com/su-Insight/MoreTalk/releases/tag/v1.0.0)
 
 ### 3. 关键配置（家属必看 ⚠️）
 为了保证应用能顺畅控制微信，请务必帮长辈完成以下手动设置：
@@ -143,11 +143,9 @@
 
 ## 🤝 贡献与反馈
 
-<div align="center">
 
 **MoreTalk - 科技不应成为长辈的门槛。**
 
 如果您觉得这个项目有意义，请为它点一个 **⭐️ Star**，这是我们持续优化的动力。  
 如果您有更好的简化建议，欢迎提交 **Pull Request**。
 
-</div>
