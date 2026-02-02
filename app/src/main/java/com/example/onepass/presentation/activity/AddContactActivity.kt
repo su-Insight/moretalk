@@ -511,22 +511,38 @@ class AddContactActivity : AppCompatActivity() {
     ): android.graphics.Bitmap? {
         if (inputStream == null) return null
 
-        val options = android.graphics.BitmapFactory.Options()
-        options.inJustDecodeBounds = true
-        android.graphics.BitmapFactory.decodeStream(inputStream, null, options)
-
-        // 重置输入流
         try {
-            inputStream.reset()
-        } catch (e: Exception) {
-            // 如果不支持reset，关闭并返回null
+            // 将输入流数据缓存到 ByteArrayOutputStream
+            val byteArrayOutputStream = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(1024)
+            var len: Int
+            while (inputStream.read(buffer).also { len = it } != -1) {
+                byteArrayOutputStream.write(buffer, 0, len)
+            }
+            byteArrayOutputStream.flush()
             inputStream.close()
+
+            val imageData = byteArrayOutputStream.toByteArray()
+            byteArrayOutputStream.close()
+
+            // 第一次解码：仅获取图片尺寸
+            val options = android.graphics.BitmapFactory.Options()
+            options.inJustDecodeBounds = true
+            android.graphics.BitmapFactory.decodeByteArray(imageData, 0, imageData.size, options)
+
+            // 第二次解码：使用采样率
+            val decodeOptions = android.graphics.BitmapFactory.Options()
+            decodeOptions.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+            decodeOptions.inJustDecodeBounds = false
+            decodeOptions.inPreferredConfig = android.graphics.Bitmap.Config.RGB_565 // 减少内存使用
+
+            return android.graphics.BitmapFactory.decodeByteArray(imageData, 0, imageData.size, decodeOptions)
+        } catch (e: Exception) {
+            Log.e(TAG, "图片解码失败: ${e.message}", e)
+            try {
+                inputStream.close()
+            } catch (_: Exception) {}
             return null
         }
-
-        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
-
-        options.inJustDecodeBounds = false
-        return android.graphics.BitmapFactory.decodeStream(inputStream, null, options)
     }
 }
