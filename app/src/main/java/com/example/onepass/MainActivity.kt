@@ -81,8 +81,24 @@ class MainActivity : AppCompatActivity() {
     private val refreshRunnable = object : Runnable {
         override fun run() {
             refreshWeather()
-            handler.postDelayed(this, 300000)
+            // 计算到下一个整点的时间
+            val delay = getTimeToNextHour()
+            handler.postDelayed(this, delay)
         }
+    }
+
+    /**
+     * 计算到下一个整点的时间（毫秒）
+     */
+    private fun getTimeToNextHour(): Long {
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.HOUR_OF_DAY, 1)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val nextHourTime = calendar.timeInMillis
+        val currentTime = System.currentTimeMillis()
+        return nextHourTime - currentTime
     }
 
     // 默认配置
@@ -164,7 +180,7 @@ class MainActivity : AppCompatActivity() {
         updateDate()
         checkLocationPermissionAndFetchWeather()
         
-        handler.postDelayed(refreshRunnable, 30 * 60 * 1000) // 30分钟自动刷新
+        handler.postDelayed(refreshRunnable, getTimeToNextHour()) // 到下一个整点自动刷新
         Log.d(TAG, "onCreate 完成")
     }
 

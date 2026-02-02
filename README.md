@@ -1,9 +1,11 @@
-
 <div align="center">
 
-<img width="204" height="192" alt="image" src="https://github.com/user-attachments/assets/ab5fa028-83b1-47e7-8550-1936a822ce7a" />
+<img width="200" height="200" alt="MoreTalk Logo" src="http://googleusercontent.com/image_generation_content/6" />
 
-**一款功能强大的Android桌面启动器与联系人管理应用**
+<div style="border: 2px solid #3B82F6; padding: 20px; margin: 20px; display: inline-block; clip-path: polygon(0 0, 15% 0, 15% 5%, 85% 5%, 85% 0, 100% 0, 100% 100%, 85% 100%, 85% 95%, 15% 95%, 15% 100%, 0 100%);">
+    <h1 style="margin: 0;">MoreTalk 「墨谈」</h1>
+    <p style="color: #64748b; font-size: 1.1em;"><b>一款专为长辈定制的极简 Android 桌面启动器</b></p>
+</div>
 
 [![Android API](https://img.shields.io/badge/API-24%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=24)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9-blue.svg?style=flat&logo=kotlin)](https://kotlinlang.org)
@@ -12,22 +14,24 @@
 </div>
 
 ---
-# MoreTalk「墨谈」- 给长辈的极简通讯桌面
 
-**MoreTalk（墨谈）** 是一款专门为老年用户研发的 Android 桌面启动器。它通过“减法”设计，移除了智能手机中繁琐的干扰项，将核心功能锁定在**亲情沟通**与**生活辅助**上。
+## 📖 项目初衷
 
-借助 Android 无障碍辅助技术（Accessibility Service），MoreTalk 将复杂的微信视频/语音通话流程缩短为**一键直达**，解决长辈“找不到人”、“不会拨号”的痛点。
+**MoreTalk（墨谈）** 诞生于对数字鸿沟的思考。智能手机不应成为长辈生活的阻碍。我们通过“极致减法”：
+- **移除** 繁琐的扫码、支付、广告与冗余设置。
+- **重塑** 核心通话路径，将复杂的微信视频流程转化为**“一键直达”**。
+- **辅助** 利用 Accessibility 自动化技术，替长辈完成所有的“中间步骤”，让每一份牵挂都即刻送达。
 
 ---
 
 ## ✨ 核心特性
 
-* **🏠 极简大图标桌面**：锁定布局，超大应用图标，从源头防止误触和图标丢失。
-* **👥 亲情一键达**：在联系人卡片上直接显示“视频通话”按钮，一触即发。
-* **💬 自动化智慧拨号**：底层无障碍服务自动模拟点击微信菜单，长辈无需任何中间操作。
-* **🌤️ 自动语音天气**：全后台自动定位刷新，支持实时语音播报，长辈不用看图也能知冷暖。
-* **📅 大字农历日历**：首页醒目标注农历与阳历日期，贴合长辈生活习惯。
-
+* **🏠 极简大图标桌面**：锁定布局，采用超大网格，从源头防止长辈误触或意外删除应用。
+* **👥 亲情一键直达**：在联系人卡片上直接显示“视频通话”和“语音通话”按钮，无需进入微信翻找。
+* **💬 自动化智慧拨号**：底层无障碍服务自动模拟点击微信菜单、弹出框及确认按钮，实现全自动化拨号。
+* **🌤️ 全自动语音天气**：支持静默定位刷新，整点自动语音播报，让长辈不用看图也能知晓冷暖。
+* **📅 大字农历日历**：首页醒目标注农历与阳历日期，完全贴合中国长辈的生活习惯。
+* **🚫 安全零冗余**：彻底移除“扫一扫”、“付款码”等功能，保障资金安全并简化视觉。
 
 ---
 
@@ -36,71 +40,59 @@
 * **开发语言**：Kotlin
 * **系统要求**：Android 7.0 (API 24) 及以上
 * **核心框架**：
-    * `AccessibilityService`: 实现微信自动化点击。
-    * `Coroutine + Flow`: 处理天气异步获取。
-    * `Retrofit + GSON`: 驱动天气与农历数据接口。
-    * `FusedLocationProvider`: 极简地理位置获取。
+    * `AccessibilityService`: 实现微信端 UI 树遍历与自动化模拟点击。
+    * `Coroutine + Flow`: 响应式处理天气数据获取与 UI 更新。
+    * `Retrofit + GSON`: 驱动远程天气 API 与农历转换接口。
+    * `FusedLocationProvider`: 极简地理位置获取逻辑。
 
 ---
 
 ## 🚀 部署与安装说明
 
-如果你是开发者或希望帮家人部署此应用，请参考以下步骤：
-1.本地自行部署
+### 1. 开发者部署
+* **环境准备**：安装 **Android Studio** (推荐 Jellyfish 或更高版本)。
+* **源码获取**：
+  ```bash
+  git clone [https://github.com/yourusername/MoreTalk.git](https://github.com/yourusername/MoreTalk.git)
+  cd MoreTalk
 
-### 1. 环境准备
-* 安装 **Android Studio** (推荐 Jellyfish 或更高版本)。
-* 准备一台 Android 7.0+ 的实体手机（无障碍服务在模拟器上可能表现不稳定）。
+  ```
 
-### 2. 获取代码与构建
-```bash
-# 克隆仓库
-git clone [https://github.com/yourusername/MoreTalk.git](https://github.com/yourusername/MoreTalk.git)
+* 构建安装：在 Android Studio 中打开项目，等待 Gradle 同步，点击 Run 'app' 安装至真机（无障碍服务需真机环境）。
 
-# 进入目录
-cd MoreTalk
-```
+### 2. 下载构建产物 (APK)
+* [点击此处下载最新正式版 APK (v1.0.0)](你的链接地址)
 
-* 在 Android Studio 中选择 **Open** 导入项目。
-* 等待 Gradle 同步完成。
-* 点击 **Run 'app'** 将应用安装至手机。
+### 3. 关键配置（家属必看 ⚠️）
+为了保证应用能顺畅控制微信，请务必帮长辈完成以下手动设置：
 
-2.下载构建产物（）链接
-
-### 3. 关键配置（家属必看）
-
-为了保证应用能顺畅控制微信，请务必完成以下手动设置：
-
-1.  **设为默认桌面**：在系统设置中将 MoreTalk 设置为“默认屏幕桌面”。(功能尚在开发)
-2.  **开启无障碍权限**：进入 `系统设置 -> 无障碍 -> 已安装的服务`，找到 **MoreTalk 智能辅助** 并开启。
-3.  **录入联系人**：在应用内添加联系人时，微信备注名必须与微信 App 里的备注完全一致（辅助规则为首个）。
-4.  **开启定位**：确保应用拥有“始终允许”的定位权限，以便自动更新天气。
+- [ ] **设为默认桌面**：进入 `系统设置 -> 应用 -> 默认应用 -> 桌面`，选择 **MoreTalk**。(该功能目前需手动开启)
+- [ ] **开启无障碍权限**：进入 `系统设置 -> 无障碍 -> 已安装的服务`，找到 **MoreTalk 智能辅助** 并开启。
+- [ ] **录入联系人**：在应用内添加联系人时，**微信备注名**必须与微信 App 里的备注完全一致（系统将自动匹配首个搜索结果）。
+- [ ] **开启定位**：确保应用拥有“始终允许”的定位权限，以便全自动更新天气。
 
 ---
 
-## 📁 项目结构
+## 📁 项目结构说明
 
-* `ui/activity/MainActivity.kt`：主页大图标布局与状态管理。
-* `service/WechatAccessibilityService.kt`：无障碍自动化逻辑（核心模块）。
-* `data/WeatherManager.kt`：全自动天气获取逻辑。
-* `ui/adapter/ContactAdapter.kt`：大字版联系人列表适配。
+* **`ui/activity/MainActivity.kt`**：首页大图标布局、时间天气组件及状态管理。
+* **`service/WechatAccessibilityService.kt`**：**核心引擎**。处理 UI 树解析、自动跳转及手势模拟。
+* **`data/WeatherManager.kt`**：静默式天气获取逻辑，实现零干扰更新。
+* **`ui/adapter/ContactAdapter.kt`**：针对老年视觉优化的超大字版联系人列表。
 
 ---
 
 ## 🎨 UI & Logo 设计理念
 
-* **极简主义**：全界面无阴影、无渐变，采用纯色块区分功能区。
-* **高辨识度**：Logo 采用绿色气泡与白色心形组合，代表“微信沟通”与“关爱”。
-
-![MoreTalk Final Logo](http://googleusercontent.com/image_generation_content/4<image-tokens-bardstorage://RESPONSE_DATA:124232465e58426d000649cb75143f5a092a5e789b346b22:97580075864430386b62699af3687e5f0:0:>)
+* **极简主义**：全界面无阴影、无渐变，采用高对比度纯色块区分功能区，降低视觉认知负担。
+* **视觉导向**：Logo 采用融合的沟通气泡与 `+` 号设计，代表“更多的连接”与“更简单的沟通”。
+* **长辈友好**：所有点击热区均进行了加倍处理，适配老年人指尖触控习惯。
 
 ---
 
-### 💡 部署小提示：AndroidManifest.xml 关键配置
+## 💡 部署小提示：AndroidManifest 关键配置
 
-为了确保长辈在使用过程中能始终保持在 MoreTalk 的极简桌面，建议在 `AndroidManifest.xml` 中为 `MainActivity` 添加 `android:launchMode="singleInstance"` 配置。这样，无论长辈按“返回键”还是“主页键”，都能直接回到 MoreTalk 桌面，避免误入其他系统界面。(功能尚在开发)
-
-**示例配置：**
+建议在 `AndroidManifest.xml` 中为 `MainActivity` 添加 `singleInstance` 配置，以确保系统的稳定性并防止长辈因误触返回键退出桌面：
 
 ```xml
 <activity
@@ -114,7 +106,6 @@ cd MoreTalk
         <category android:name="android.intent.category.DEFAULT" />
     </intent-filter>
 </activity>
-```
 
 ---
 
@@ -122,11 +113,9 @@ cd MoreTalk
 
 <div align="center">
 
-**如果这个项目对你有帮助，请给个 ⭐️ Star 支持一下！**
-**如果您有更好的简化建议，欢迎提交 Pull Request。**
-
 **MoreTalk - 科技不应成为长辈的门槛。**
 
+如果您觉得这个项目有意义，请为它点一个 **⭐️ Star**，这是我们持续优化的动力。  
+如果您有更好的简化建议，欢迎提交 **Pull Request**。
+
 </div>
-
-
