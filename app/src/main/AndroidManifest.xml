@@ -31,14 +31,13 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
     
     <service
         android:name=".WechatAccessibilityService"
         android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-        android:label="微信无障碍服务"
+        android:label="MoreTalk 智能辅助"
         android:description="@string/accessibility_service_description"
         android:exported="false">
       <intent-filter>

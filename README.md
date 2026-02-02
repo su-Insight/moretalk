@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="200" height="200" alt="MoreTalk Logo" src="http://googleusercontent.com/image_generation_content/6" />
+<img width="200" height="200" alt="MoreTalk Logo" src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" />
 
 <div style="border: 2px solid #3B82F6; padding: 20px; margin: 20px; display: inline-block; clip-path: polygon(0 0, 15% 0, 15% 5%, 85% 5%, 85% 0, 100% 0, 100% 100%, 85% 100%, 85% 95%, 15% 95%, 15% 100%, 0 100%);">
     <h1 style="margin: 0;">MoreTalk 「墨谈」</h1>
@@ -19,7 +19,7 @@
 
 **MoreTalk（墨谈）** 诞生于对数字鸿沟的思考。智能手机不应成为长辈生活的阻碍。我们通过“极致减法”：
 - **移除** 繁琐的扫码、支付、广告与冗余设置。
-- **重塑** 核心通话路径，将复杂的微信视频流程转化为**“一键直达”**。
+- **重塑** 核心通话路径，将复杂的微信视频流程转化为**一键直达**。
 - **辅助** 利用 Accessibility 自动化技术，替长辈完成所有的“中间步骤”，让每一份牵挂都即刻送达。
 
 ---
@@ -37,13 +37,46 @@
 
 ## 🛠️ 技术栈
 
-* **开发语言**：Kotlin
-* **系统要求**：Android 7.0 (API 24) 及以上
-* **核心框架**：
-    * `AccessibilityService`: 实现微信端 UI 树遍历与自动化模拟点击。
-    * `Coroutine + Flow`: 响应式处理天气数据获取与 UI 更新。
-    * `Retrofit + GSON`: 驱动远程天气 API 与农历转换接口。
-    * `FusedLocationProvider`: 极简地理位置获取逻辑。
+### 核心技术
+- **开发语言**：Kotlin
+- **系统要求**：Android 7.0 (API 24) 及以上
+- **编译版本**：Android 14 (API 36)
+- **目标版本**：Android 14 (API 36)
+- **应用版本**：v1.0.0 (build 1)
+- **Java版本**：Java 11
+
+### 核心框架
+- **`AccessibilityService`**: 实现微信端 UI 树遍历与自动化模拟点击
+- **`Coroutine + Flow`**: 响应式处理天气数据获取与 UI 更新
+- **`Retrofit + GSON`**: 驱动远程天气 API 与农历转换接口
+- **`FusedLocationProvider`**: 极简地理位置获取逻辑
+- **`RecyclerView`**: 高效的列表与网格数据展示
+- **`Material Design`**: 现代化的 UI 设计规范
+- **`TextToSpeech`**: 语音播报功能
+
+### 关键依赖
+| 依赖库 | 版本 | 用途 |
+|--------|------|------|
+| `AndroidX Core KTX` | 最新版 | Android核心功能扩展 |
+| `AndroidX AppCompat` | 最新版 | 兼容库支持 |
+| `Material Components` | 最新版 | Material Design组件 |
+| `Retrofit` | 2.9.0 | 网络请求框架 |
+| `GSON` | 2.10.1 | JSON解析库 |
+| `Kotlin Coroutines` | 1.7.3 | 异步编程框架 |
+| `Play Services Location` | 21.1.0 | 位置服务 |
+| `RecyclerView` | 1.3.2 | 列表展示 |
+| `Lunar Library` | 1.7.7 | 农历计算 |
+
+### 架构模式
+- **MVVM架构**：模型-视图-视图模型
+- **Repository模式**：数据访问层抽象
+- **适配器模式**：UI组件与数据绑定
+- **单例模式**：全局服务管理
+
+### 安全特性
+- **权限管理**：运行时权限申请
+- **文件安全**：FileProvider安全文件访问
+- **网络安全**：HTTPS加密通信
 
 ---
 
@@ -53,12 +86,12 @@
 * **环境准备**：安装 **Android Studio** (推荐 Jellyfish 或更高版本)。
 * **源码获取**：
   ```bash
-  git clone [https://github.com/yourusername/MoreTalk.git](https://github.com/yourusername/MoreTalk.git)
+  git clone https://github.com/su-Insight/MoreTalk.git
   cd MoreTalk
 
   ```
 
-* 构建安装：在 Android Studio 中打开项目，等待 Gradle 同步，点击 Run 'app' 安装至真机（无障碍服务需真机环境）。
+* **构建安装**：在 Android Studio 中打开项目，等待 Gradle 同步，点击 Run 'app' 安装至真机（无障碍服务需真机环境）。
 
 ### 2. 下载构建产物 (APK)
 * [点击此处下载最新正式版 APK (v1.0.0)](你的链接地址)
@@ -106,7 +139,7 @@
         <category android:name="android.intent.category.DEFAULT" />
     </intent-filter>
 </activity>
-
+```
 ---
 
 ## 🤝 贡献与反馈
