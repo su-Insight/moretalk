@@ -1,4 +1,4 @@
-package com.example.onepass
+package com.example.onepass.presentation.activity
 
 import android.content.Context
 import android.content.Intent
@@ -11,7 +11,8 @@ import android.widget.TextView
 import android.widget.Toast
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import com.example.onepass.GlobalScaleManager
+import com.example.onepass.R
+import com.example.onepass.core.config.GlobalScaleManager
 
 class SettingsActivity : AppCompatActivity() {
 

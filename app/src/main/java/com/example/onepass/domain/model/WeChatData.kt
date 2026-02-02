@@ -1,4 +1,4 @@
-package com.example.onepass
+package com.example.onepass.domain.model
 
 object WeChatData {
     var value: String = ""

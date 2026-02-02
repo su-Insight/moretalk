@@ -1,4 +1,4 @@
-package com.example.onepass
+package com.example.onepass.domain.model
 
 enum class WeChatActivity(val id: String) {
     INDEX("com.tencent.mm.ui.LauncherUI"),

@@ -1,4 +1,4 @@
-package com.example.onepass
+package com.example.onepass.domain.model
 
 enum class WeChatId(val id: String) {
     TABLES("com.tencent.mm:id/icon_tv"),

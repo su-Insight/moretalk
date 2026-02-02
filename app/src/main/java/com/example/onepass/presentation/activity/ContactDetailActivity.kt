@@ -1,10 +1,12 @@
-package com.example.onepass
+package com.example.onepass.presentation.activity
 
 import android.os.Bundle
 import android.util.Log
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.onepass.R
+import com.example.onepass.domain.model.Contact
 
 class ContactDetailActivity : AppCompatActivity() {
     companion object {

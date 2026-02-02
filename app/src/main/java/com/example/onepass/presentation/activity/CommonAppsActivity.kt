@@ -1,4 +1,4 @@
-package com.example.onepass
+package com.example.onepass.presentation.activity
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -12,7 +12,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.onepass.GlobalScaleManager
+import com.example.onepass.R
+import com.example.onepass.core.config.GlobalScaleManager
 
 data class AppInfo(val label: String, val packageName: String, val icon: Drawable, var selected: Boolean, val order: Int = 0)
 

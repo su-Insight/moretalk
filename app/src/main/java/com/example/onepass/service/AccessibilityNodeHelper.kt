@@ -1,10 +1,9 @@
-package com.example.onepass
+package com.example.onepass.service
 
+import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 
-object AccessibilityNodeHelper {
-
-    fun <T> AccessibilityNodeInfo.use(block: (AccessibilityNodeInfo) -> T): T {
+object AccessibilityNodeHelper {    fun <T> AccessibilityNodeInfo.use(block: (AccessibilityNodeInfo) -> T): T {
         try {
             return block(this)
         } finally {

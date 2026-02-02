@@ -1,4 +1,4 @@
-package com.example.onepass
+package com.example.onepass.core.config
 
 import android.content.Context
 

@@ -1,4 +1,4 @@
-package com.example.onepass
+package com.example.onepass.presentation.adapter
 
 import android.view.ViewOutlineProvider
 import android.graphics.Outline
@@ -8,6 +8,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.onepass.R
+import com.example.onepass.domain.model.Contact
 
 class ContactAdapter(private val contacts: List<Contact>, private val listener: OnContactClickListener) : RecyclerView.Adapter<ContactAdapter.ContactViewHolder>() {
 

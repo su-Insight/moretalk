@@ -1,4 +1,4 @@
-package com.example.onepass
+package com.example.onepass.service
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
@@ -9,8 +9,12 @@ import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import com.example.onepass.AccessibilityNodeHelper.safeRecycle
-import com.example.onepass.AccessibilityNodeHelper.safeRecycleAll
+import com.example.onepass.domain.model.WeChatActivity
+import com.example.onepass.domain.model.WeChatData
+import com.example.onepass.domain.model.WeChatId
+import com.example.onepass.service.AccessibilityNodeHelper.safeRecycle
+import com.example.onepass.service.AccessibilityNodeHelper.safeRecycleAll
+import com.example.onepass.utils.PerformanceMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

@@ -1,4 +1,4 @@
-package com.example.onepass
+package com.example.onepass.utils
 
 import android.util.Log
 

@@ -1,4 +1,4 @@
-package com.example.onepass
+package com.example.onepass.presentation.activity
 
 import android.Manifest
 import android.animation.ObjectAnimator
@@ -16,7 +16,6 @@ import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
-import com.example.onepass.Logger
 import android.view.View
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -34,10 +33,18 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.GridLayoutManager
+import com.example.onepass.R
 import com.example.onepass.api.WeatherApi
 import com.example.onepass.location.LocationManager
 import com.example.onepass.model.AmapWeatherResponse
 import com.example.onepass.model.LiveWeather
+import com.example.onepass.utils.Logger
+import com.example.onepass.core.config.AppConfig
+import com.example.onepass.core.config.GlobalScaleManager
+import com.example.onepass.domain.model.Contact
+import com.example.onepass.domain.model.WeChatData
+import com.example.onepass.presentation.adapter.HomeContactAdapter
+import com.example.onepass.utils.PerformanceMonitor
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -991,7 +998,7 @@ class MainActivity : AppCompatActivity() {
     
     private fun isAccessibilityServiceEnabled(): Boolean {
         // 获取完整的服务类名
-        val serviceComponentName = "${packageName}/${packageName}.WechatAccessibilityService"
+        val serviceComponentName = "${packageName}/com.example.onepass.service.WechatAccessibilityService"
         // 也尝试短格式
         val serviceComponentNameShort = "${packageName}/WechatAccessibilityService"
         

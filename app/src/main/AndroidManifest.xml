@@ -35,7 +35,7 @@
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
     
     <service
-        android:name=".WechatAccessibilityService"
+        android:name=".service.WechatAccessibilityService"
         android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
         android:label="MoreTalk 智能辅助"
         android:description="@string/accessibility_service_description"
@@ -57,16 +57,17 @@
           android:name="android.support.FILE_PROVIDER_PATHS"
           android:resource="@xml/file_paths" />
     </provider>
-    <activity android:name=".MainActivity" android:exported="true">
+    <activity android:name=".presentation.activity.MainActivity" android:exported="true">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
-    <activity android:name=".SettingsActivity" android:exported="false" android:label="设置" />
-    <activity android:name=".CommonAppsActivity" android:exported="false" android:label="常用应用" />
-    <activity android:name=".ContactsActivity" android:exported="false" android:label="联系人" />
-    <activity android:name=".AddContactActivity" android:exported="false" android:label="添加联系人" />
-    <activity android:name=".ContactDetailActivity" android:exported="false" android:label="联系人详情" />
+    <activity android:name=".presentation.activity.SettingsActivity" android:exported="false" android:label="设置" />
+    <activity android:name=".presentation.activity.CommonAppsActivity" android:exported="false" android:label="常用应用" />
+    <activity android:name=".presentation.activity.ContactsActivity" android:exported="false" android:label="联系人" />
+    <activity android:name=".presentation.activity.AddContactActivity" android:exported="false" android:label="添加联系人" />
+    <activity android:name=".presentation.activity.ContactDetailActivity" android:exported="false" android:label="联系人详情" />
+    <activity android:name=".presentation.activity.WeChatActivity" android:exported="false" android:label="微信" />
   </application>
 </manifest>
