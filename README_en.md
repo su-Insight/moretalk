@@ -137,7 +137,7 @@ It is recommended to set `singleInstance` for the `MainActivity` in `AndroidMani
         <category android:name="android.intent.category.DEFAULT" />
     </intent-filter>
 </activity>
-
+```
 
 ## 🤝 Contribution & Feedback
 
