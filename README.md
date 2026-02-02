@@ -13,6 +13,10 @@
 
 </div>
 
+<p align="center">
+  <a href="README.md">English</a> | <a href="README_zh.md">简体中文</a>
+</p>
+
 ---
 
 ## 📖 项目初衷
