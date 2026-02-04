@@ -93,6 +93,11 @@
 
 ## 🚀 部署与安装说明
 
+### ✨ 获取最新功能与优化通知(推荐)
+
+<img width="1872" height="476" alt="image" src="https://github.com/user-attachments/assets/b4c6bfde-0f01-43e9-83aa-dac7bbb2de26" />
+
+
 ### 1. 开发者部署
 * **环境准备**：安装 **Android Studio** (推荐 Jellyfish 或更高版本)。
 * **源码获取**：
