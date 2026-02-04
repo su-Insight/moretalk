@@ -90,6 +90,11 @@
 
 ## 🚀 Deployment & Installation
 
+### ✨ Get the Latest Features & Optimization Notifications (Recommended)
+
+<img width="1872" height="476" alt="image" src="https://github.com/user-attachments/assets/b4c6bfde-0f01-43e9-83aa-dac7bbb2de26" />
+
+
 ### 1. Developer Setup
 * **Environment**: Install **Android Studio** (Jellyfish or later recommended).
 * **Source Code**:
