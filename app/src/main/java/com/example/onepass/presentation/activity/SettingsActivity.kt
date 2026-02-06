@@ -113,7 +113,7 @@ class SettingsActivity : AppCompatActivity() {
             radioSolar.isChecked = true
         }
 
-        val weatherEnabled = prefs.getBoolean(KEY_WEATHER_ENABLED, false)
+        val weatherEnabled = prefs.getBoolean(KEY_WEATHER_ENABLED, true)
         switchWeather.isChecked = weatherEnabled
         val vol = prefs.getInt(KEY_WEATHER_VOLUME, 50)
         seekBarWeatherVol.progress = vol

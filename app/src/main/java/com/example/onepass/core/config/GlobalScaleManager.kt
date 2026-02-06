@@ -5,7 +5,7 @@ import android.content.Context
 object GlobalScaleManager {
     private const val PREFS_NAME = "OnePassPrefs"
     private const val KEY_SCALE_PERCENTAGE = "scale_percentage"
-    private const val DEFAULT_SCALE_PERCENTAGE = 100
+    private const val DEFAULT_SCALE_PERCENTAGE = 80
     private const val MIN_SCALE_PERCENTAGE = 60
     private const val MAX_SCALE_PERCENTAGE = 100
 

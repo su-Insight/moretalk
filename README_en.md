@@ -35,7 +35,8 @@
 * **💬 Automated Smart Dialing**: Underlying Accessibility Service automatically simulates clicks on WeChat menus, pop-ups, and confirmation buttons.
 * **🌤️ Automated Voice Weather**: Supports silent background refreshing and hourly voice broadcasts, keeping seniors informed without needing to read the screen.
 * **📅 Large-Font Lunar Calendar**: Prominently displays both Lunar and Gregorian dates, aligning with the daily habits of traditional elders.
-
+* **🌐 Cloud-Free by Design**: All data is stored locally with support for contact import and export, so switching phones is worry-free. You retain full control over your data at all times, ensuring absolute security.
+* **💥 Data Encryption**: Phone numbers are encrypted using cryptographic algorithms throughout their entire lifecycle during operation, providing an additional layer of data protection.
 ---
 
 ## 🛠️ Tech Stack
@@ -82,7 +83,7 @@
 ## 🌐Operation Interface - Test Device (MI 12s)
 <img src="https://github.com/user-attachments/assets/d62c2c73-cf92-419a-91a1-e673848a0ca0" height="500" />
 <img src="https://github.com/user-attachments/assets/7c9c4774-0199-4b22-acf4-bd27d95a5600" height="500" />
-<img src="https://github.com/user-attachments/assets/484d42b2-7a1c-447f-97e8-4dbb50ead0a9" height="500" />
+<img src="https://github.com/user-attachments/assets/c665dbad-a6c5-42e4-8c75-16ac0da6bb7e" height="500" />
 <img src="https://github.com/user-attachments/assets/8d4a131a-3a32-4ec9-82eb-db50460ded91" height="500" />
 <img src="https://github.com/user-attachments/assets/2ffa8571-e928-4100-b63c-5a5999df2102" height="500" />
 <img src="https://github.com/user-attachments/assets/5e3575f7-99ec-48c6-a6d7-054d1b5e60a4" height="500" />

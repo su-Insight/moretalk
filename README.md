@@ -35,6 +35,8 @@
 * **💬 自动化智慧拨号**：底层无障碍服务自动模拟点击微信菜单、弹出框及确认按钮，实现全自动化拨号。
 * **🌤️ 全自动语音天气**：支持静默定位刷新，整点自动语音播报，让长辈不用看图也能知晓冷暖。
 * **📅 大字农历日历**：首页醒目标注农历与阳历日期，完全贴合中国长辈的生活习惯。
+* **🌐 拒绝云端**：所有数据本地化存储，支持联系人导入导出（更换手机也不怕），数据全程掌握在自己手中，绝对安全。
+* **💥 数据加密**：整个生命周期运行过程中手机号均通过加密算法执行加密，进一步保障数据安全。
 
 ---
 
@@ -86,7 +88,7 @@
 ## 🌐运行界面-测试机型（MI 12s）
 <img src="https://github.com/user-attachments/assets/d62c2c73-cf92-419a-91a1-e673848a0ca0" height="500" />
 <img src="https://github.com/user-attachments/assets/7c9c4774-0199-4b22-acf4-bd27d95a5600" height="500" />
-<img src="https://github.com/user-attachments/assets/484d42b2-7a1c-447f-97e8-4dbb50ead0a9" height="500" />
+<img src="https://github.com/user-attachments/assets/c665dbad-a6c5-42e4-8c75-16ac0da6bb7e" height="500" />
 <img src="https://github.com/user-attachments/assets/8d4a131a-3a32-4ec9-82eb-db50460ded91" height="500" />
 <img src="https://github.com/user-attachments/assets/2ffa8571-e928-4100-b63c-5a5999df2102" height="500" />
 <img src="https://github.com/user-attachments/assets/5e3575f7-99ec-48c6-a6d7-054d1b5e60a4" height="500" />
