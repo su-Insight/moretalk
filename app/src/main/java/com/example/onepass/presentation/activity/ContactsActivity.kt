@@ -1,12 +1,22 @@
 package com.example.onepass.presentation.activity
 
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.ImageView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.example.onepass.R
 import com.example.onepass.domain.model.Contact
 import com.example.onepass.presentation.adapter.ContactAdapter
+import com.example.onepass.utils.CryptoUtil
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListener {
     companion object {
@@ -25,7 +35,7 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
             val contacts = mutableListOf<Contact>()
             if (contactsJson != null) {
                 try {
-                    val gson = com.google.gson.Gson()
+                    val gson = Gson()
                     val contactArray = gson.fromJson(contactsJson, Array<Contact>::class.java)
                     contacts.addAll(contactArray)
                 } catch (e: Exception) {
@@ -44,7 +54,7 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
             }
             
             // 保存更新后的联系人列表
-            val gson = com.google.gson.Gson()
+            val gson = Gson()
             val updatedContactsJson = gson.toJson(contacts)
             prefs.edit().putString(KEY_CONTACTS, updatedContactsJson).apply()
             
@@ -68,6 +78,20 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
     
     private var contacts: MutableList<Contact> = mutableListOf()
     private lateinit var contactAdapter: ContactAdapter
+
+    // 导入文件选择器
+    private val importContactLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let { importContactsFromFile(it) }
+    }
+
+    // 导出文件选择器 (用于保存到指定位置)
+    private val exportContactLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        uri?.let { saveContactsToUri(it) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,14 +128,13 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
         
         btnImportContacts.setOnClickListener {
             Log.d(TAG, "导入联系人按钮被点击")
-            // 导入联系人功能开发中...
-            android.widget.Toast.makeText(this, "导入联系人功能开发中...", android.widget.Toast.LENGTH_SHORT).show()
+            // 打开文件选择器，选择JSON文件
+            importContactLauncher.launch(arrayOf("application/json"))
         }
-        
+
         btnExportContacts.setOnClickListener {
             Log.d(TAG, "导出联系人按钮被点击")
-            // 导出联系人功能开发中...
-            android.widget.Toast.makeText(this, "导出联系人功能开发中...", android.widget.Toast.LENGTH_SHORT).show()
+            exportContacts()
         }
         
         Log.d(TAG, "ContactsActivity onCreate 完成")
@@ -133,7 +156,7 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
         if (contactsJson != null) {
             try {
                 // 使用Gson解析JSON数据
-                val gson = com.google.gson.Gson()
+                val gson = Gson()
                 val contactArray = gson.fromJson(contactsJson, Array<Contact>::class.java)
                 contacts.clear()
                 contacts.addAll(contactArray)
@@ -234,7 +257,7 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
         val allContacts = mutableListOf<Contact>()
         if (contactsJson != null) {
             try {
-                val gson = com.google.gson.Gson()
+                val gson = Gson()
                 val contactArray = gson.fromJson(contactsJson, Array<Contact>::class.java)
                 allContacts.addAll(contactArray)
             } catch (e: Exception) {
@@ -389,5 +412,134 @@ class ContactsActivity : AppCompatActivity(), ContactAdapter.OnContactClickListe
 
         options.inJustDecodeBounds = false
         return android.graphics.BitmapFactory.decodeFile(path, options)
+    }
+
+    /**
+     * 导出联系人列表到文件
+     */
+    private fun exportContacts() {
+        if (contacts.isEmpty()) {
+            Toast.makeText(this, "没有联系人可导出", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // 生成默认文件名
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val fileName = "onepass_contacts_$timestamp.json"
+
+        // 打开文件保存对话框
+        exportContactLauncher.launch(fileName)
+    }
+
+    /**
+     * 保存联系人到指定URI
+     */
+    private fun saveContactsToUri(uri: Uri) {
+        try {
+            // 加密导出
+            val encryptedContacts = contacts.map { c ->
+                val encryptedPhone = CryptoUtil.encrypt(c.phoneNumber)
+                Contact(
+                    id = c.id,
+                    name = c.name,
+                    phoneNumber = encryptedPhone ?: c.phoneNumber,
+                    wechatNote = c.wechatNote,
+                    hasWechatVideo = c.hasWechatVideo,
+                    hasWechatVoice = c.hasWechatVoice,
+                    hasPhoneCall = c.hasPhoneCall,
+                    imagePath = c.imagePath
+                )
+            }
+            val gson = Gson()
+            val contactsJson = gson.toJson(encryptedContacts)
+
+            contentResolver.openOutputStream(uri)?.use { outputStream ->
+                outputStream.write(contactsJson.toByteArray(Charsets.UTF_8))
+            }
+
+            Toast.makeText(this, "文件已保存至: $uri", Toast.LENGTH_LONG).show()
+            Log.d(TAG, "联系人导出成功: $uri")
+        } catch (e: IOException) {
+            Log.e(TAG, "导出联系人失败: ${e.message}", e)
+            Toast.makeText(this, "导出失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * 从文件导入联系人
+     */
+    private fun importContactsFromFile(uri: Uri) {
+        try {
+            val jsonString = contentResolver.openInputStream(uri)?.bufferedReader()?.use {
+                it.readText()
+            }
+
+            if (jsonString.isNullOrEmpty()) {
+                Toast.makeText(this, "文件内容为空", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            val gson = Gson()
+            val importedContacts: List<Contact> = gson.fromJson(
+                jsonString,
+                object : TypeToken<List<Contact>>() {}.type
+            )
+
+            if (importedContacts.isEmpty()) {
+                Toast.makeText(this, "文件中没有联系人", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            // 获取当前联系人列表
+            val prefs = getSharedPreferences(CONTACTS_PREFS, MODE_PRIVATE)
+            val currentJson = prefs.getString(KEY_CONTACTS, null)
+            val currentContacts = mutableListOf<Contact>()
+
+            currentJson?.let {
+                try {
+                    val currentArray = gson.fromJson(it, Array<Contact>::class.java)
+                    currentContacts.addAll(currentArray)
+                } catch (e: Exception) {
+                    Log.e(TAG, "解析现有联系人失败: ${e.message}", e)
+                }
+            }
+
+            // 合并联系人（避免ID冲突）
+            val existingIds = currentContacts.map { c -> c.id }.toSet()
+            var importCount = 0
+
+            for (imported in importedContacts) {
+                if (imported.id !in existingIds) {
+                    // 解密手机号后再保存
+                    val decryptedPhone = CryptoUtil.decrypt(imported.phoneNumber)
+                    val decryptedContact = Contact(
+                        id = imported.id,
+                        name = imported.name,
+                        phoneNumber = decryptedPhone ?: imported.phoneNumber,
+                        wechatNote = imported.wechatNote,
+                        hasWechatVideo = imported.hasWechatVideo,
+                        hasWechatVoice = imported.hasWechatVoice,
+                        hasPhoneCall = imported.hasPhoneCall,
+                        imagePath = imported.imagePath
+                    )
+                    currentContacts.add(decryptedContact)
+                    importCount++
+                }
+            }
+
+            // 保存合并后的联系人列表
+            val updatedJson = gson.toJson(currentContacts)
+            prefs.edit().putString(KEY_CONTACTS, updatedJson).apply()
+
+            Toast.makeText(this, "成功导入 $importCount 个联系人", Toast.LENGTH_SHORT).show()
+
+            // 刷新列表
+            loadContacts()
+
+            Log.d(TAG, "导入联系人成功: $importCount 个")
+        } catch (e: Exception) {
+            Log.e(TAG, "导入联系人失败: ${e.message}", e)
+            Toast.makeText(this, "导入失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 }

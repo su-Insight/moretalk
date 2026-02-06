@@ -11,9 +11,9 @@
         android:paddingStart="16dp"
         android:paddingEnd="16dp">
 
-        <!-- 用户信息区域 -->
+        <!-- 日期样式设置 -->
         <androidx.cardview.widget.CardView
-            android:id="@+id/userCard"
+            android:id="@+id/dateStyleCard"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
@@ -22,56 +22,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent">
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="16dp">
-
-                <ImageView
-                    android:id="@+id/userAvatar"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    android:src="@android:drawable/ic_menu_myplaces"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <TextView
-                    android:id="@+id/userName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="未登录"
-                    android:textSize="31sp"
-                    android:textStyle="bold"
-                    android:layout_marginStart="16dp"
-                    app:layout_constraintStart_toEndOf="@id/userAvatar"
-                    app:layout_constraintTop_toTopOf="@id/userAvatar" />
-
-                <TextView
-                    android:id="@+id/userStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="点击登录"
-                    android:textSize="24sp"
-                    android:textColor="#666666"
-                    android:layout_marginStart="16dp"
-                    app:layout_constraintStart_toEndOf="@id/userAvatar"
-                    app:layout_constraintTop_toBottomOf="@id/userName" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- 日期样式设置 -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/dateStyleCard"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/userCard">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"

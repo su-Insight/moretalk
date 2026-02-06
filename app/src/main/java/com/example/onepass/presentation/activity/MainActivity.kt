@@ -1088,12 +1088,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadCommonApps() {
         Log.d(TAG, "开始加载常用应用")
-        
+
         // 从 SharedPreferences 加载图标大小设置
         val iconSizeValue = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt(KEY_ICON_SIZE, 80)
-        // 将 0-100 的值映射到 100-240dp 的范围（增大图标大小），然后在缩小30%的基础上再缩小10%
-        val baseIconSize = 100 + (iconSizeValue * 140 / 100) // 增加100%
-        val originalIconSize = (baseIconSize * 0.7 * 0.9).toInt() // 缩小30%后再缩小10%
+        // 将 0-100 的值映射到 100-240dp 的范围（增大图标大小）
+        val baseIconSize = 100 + (iconSizeValue * 140 / 100)
+        // 缩小30%后再增大30%和20%（即保持原来大小的91%），然后使用GlobalScaleManager进行缩放
+        val originalIconSize = (baseIconSize * 0.7 * 0.9 * 1.3 * 1.2).toInt()
         // 使用GlobalScaleManager进行缩放
         val iconSize = GlobalScaleManager.getScaledValue(this, originalIconSize)
         val originalTextSize = (originalIconSize / 10).toFloat()
@@ -1222,7 +1223,7 @@ class CommonAppAdapter(
             
             // 使用缓存的图标大小值
             val baseIconSize = 100 + (iconSizeValue * 140 / 100)
-            val originalIconSize = (baseIconSize * 0.7 * 0.9).toInt()
+            val originalIconSize = (baseIconSize * 0.7 * 0.9 * 1.3 * 1.2).toInt()
             val scaledIconSize = GlobalScaleManager.getScaledValue(itemView.context, originalIconSize)
             val iconParams = iconView.layoutParams
             iconParams.width = scaledIconSize

@@ -16,9 +16,6 @@ import com.example.onepass.core.config.GlobalScaleManager
 
 class SettingsActivity : AppCompatActivity() {
 
-    private lateinit var userAvatar: ImageView
-    private lateinit var userName: TextView
-    private lateinit var userStatus: TextView
     private lateinit var radioLunar: RadioButton
     private lateinit var radioSolar: RadioButton
     private lateinit var dateStyleGroup: RadioGroup
@@ -62,7 +59,6 @@ class SettingsActivity : AppCompatActivity() {
         initViews()
         loadSettings()
         setupListeners()
-        updateUserStatus()
     }
 
     override fun onResume() {
@@ -77,9 +73,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
-        userAvatar = findViewById(R.id.userAvatar)
-        userName = findViewById(R.id.userName)
-        userStatus = findViewById(R.id.userStatus)
         radioLunar = findViewById(R.id.radioLunar)
         radioSolar = findViewById(R.id.radioSolar)
         dateStyleGroup = findViewById(R.id.dateStyleGroup)
@@ -140,14 +133,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        userAvatar.setOnClickListener {
-            if (isLoggedIn) {
-                Toast.makeText(this, "已登录", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "登录功能开发中...", Toast.LENGTH_SHORT).show()
-            }
-        }
-
         dateStyleGroup.setOnCheckedChangeListener { _, checkedId ->
             val isLunar = checkedId == R.id.radioLunar
             val editor = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
@@ -198,18 +183,6 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.makeText(this@SettingsActivity, "天气音量设为 ${seekBarWeatherVol.progress}%", Toast.LENGTH_SHORT).show()
             }
         })
-    }
-
-    private fun updateUserStatus() {
-        if (isLoggedIn) {
-            userName.text = "用户名"
-            userStatus.text = "已登录"
-            userStatus.setTextColor(resources.getColor(android.R.color.holo_green_dark))
-        } else {
-            userName.text = "未登录"
-            userStatus.text = "点击登录"
-            userStatus.setTextColor(resources.getColor(android.R.color.holo_orange_dark))
-        }
     }
 
     private fun setAsDefaultLauncher() {
@@ -336,39 +309,14 @@ class SettingsActivity : AppCompatActivity() {
     }
     
     private fun applyScaleEffects(scalePercentage: Int) {
-        // 缩放用户头像
-        val originalAvatarSize = 240 // 与联系人头像保持一致的原始大小
-        val scaledAvatarSize = GlobalScaleManager.getScaledValue(this, originalAvatarSize)
-        val avatarParams = userAvatar.layoutParams
-        avatarParams.width = scaledAvatarSize
-        avatarParams.height = scaledAvatarSize
-        userAvatar.layoutParams = avatarParams
-        
         // 缩放字体大小
-        val originalUserNameSize = 31f // 原始大小31sp
-        val originalUserStatusSize = 24f // 原始大小24sp
         val originalTitleSize = 27f // 标题原始大小27sp
         val originalOptionSize = 24f // 选项原始大小24sp
         val originalButtonSize = 20f // 按钮原始大小20sp
-        val originalSubtextSize = 24f // 副标题原始大小24sp
-        
-        val scaledUserNameSize = GlobalScaleManager.getScaledValue(this, originalUserNameSize)
-        val scaledUserStatusSize = GlobalScaleManager.getScaledValue(this, originalUserStatusSize)
+
         val scaledTitleSize = GlobalScaleManager.getScaledValue(this, originalTitleSize)
         val scaledOptionSize = GlobalScaleManager.getScaledValue(this, originalOptionSize)
         val scaledButtonSize = GlobalScaleManager.getScaledValue(this, originalButtonSize)
-        val scaledSubtextSize = GlobalScaleManager.getScaledValue(this, originalSubtextSize)
-        
-        // 用户信息文本
-        userName.textSize = scaledUserNameSize
-        userStatus.textSize = scaledUserStatusSize
-        
-        // 标题文本
-        textDateStyle.textSize = scaledTitleSize
-        textCommonAppsTitle.textSize = scaledTitleSize
-        textContactsTitle.textSize = scaledTitleSize
-        textIconSizeTitle.textSize = scaledTitleSize
-        textWeatherTitle.textSize = scaledTitleSize
         
         // 选项文本
         radioLunar.textSize = scaledOptionSize
@@ -378,7 +326,7 @@ class SettingsActivity : AppCompatActivity() {
         textNoCommonApps.textSize = scaledOptionSize
         
         // 按钮文本
-        btnSetDefaultLauncher.textSize = scaledSubtextSize
+        btnSetDefaultLauncher.textSize = scaledOptionSize
         btnCommonApps.textSize = scaledButtonSize
         btnContacts.textSize = scaledButtonSize
         
