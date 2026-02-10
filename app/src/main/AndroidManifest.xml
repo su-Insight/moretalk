@@ -26,6 +26,8 @@
   <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
   
   <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
   
   <application
         android:allowBackup="true"
@@ -35,7 +37,7 @@
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
     
     <service
-        android:name=".service.WechatAccessibilityService"
+        android:name="com.google.android.accessibility.selecttospeak.SelectToSpeakService"
         android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
         android:label="MoreTalk 智能辅助"
         android:description="@string/accessibility_service_description"
@@ -63,6 +65,8 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
+
+
     <activity android:name=".presentation.activity.SettingsActivity" android:exported="false" android:label="设置" />
     <activity android:name=".presentation.activity.CommonAppsActivity" android:exported="false" android:label="常用应用" />
     <activity android:name=".presentation.activity.ContactsActivity" android:exported="false" android:label="联系人" />

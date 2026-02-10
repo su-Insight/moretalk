@@ -11,6 +11,7 @@ import android.widget.TextView
 import android.widget.Toast
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import com.example.onepass.R
 import com.example.onepass.core.config.GlobalScaleManager
 
@@ -28,6 +29,9 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var switchWeather: android.widget.Switch
     private lateinit var seekBarWeatherVol: SeekBar
     private lateinit var textWeatherVol: TextView
+    private lateinit var speechRateCard: CardView
+    private lateinit var seekBarSpeechRate: SeekBar
+    private lateinit var textSpeechRate: TextView
     private lateinit var commonAppsScrollView: android.widget.HorizontalScrollView
     private lateinit var commonAppsContainer: android.widget.LinearLayout
     private lateinit var textNoCommonApps: TextView
@@ -39,6 +43,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var textContactsTitle: TextView
     private lateinit var textIconSizeTitle: TextView
     private lateinit var textWeatherTitle: TextView
+    private lateinit var textSpeechRateTitle: TextView
 
     private var isLoggedIn = false
     private val PREFS_NAME = "OnePassPrefs"
@@ -49,6 +54,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private val KEY_WEATHER_ENABLED = "weather_enabled"
     private val KEY_WEATHER_VOLUME = "weather_volume"
+    private val KEY_SPEECH_RATE = "speech_rate"
     private val KEY_COMMON_APPS = "common_apps"
     private val AVAILABLE_APPS = arrayOf("微信", "QQ", "微博", "浏览器", "邮件")
 
@@ -89,6 +95,9 @@ class SettingsActivity : AppCompatActivity() {
         switchWeather = findViewById(R.id.switchWeather)
         seekBarWeatherVol = findViewById(R.id.seekBarWeatherVol)
         textWeatherVol = findViewById(R.id.textWeatherVol)
+        speechRateCard = findViewById(R.id.speechRateCard)
+        seekBarSpeechRate = findViewById(R.id.seekBarSpeechRate)
+        textSpeechRate = findViewById(R.id.textSpeechRate)
         commonAppsScrollView = findViewById(R.id.commonAppsScrollView)
         commonAppsContainer = findViewById(R.id.commonAppsContainer)
         textNoCommonApps = findViewById(R.id.textNoCommonApps)
@@ -102,6 +111,7 @@ class SettingsActivity : AppCompatActivity() {
         textContactsTitle = findViewById(R.id.textContactsTitle)
         textIconSizeTitle = findViewById(R.id.textIconSizeTitle)
         textWeatherTitle = findViewById(R.id.textWeatherTitle)
+        textSpeechRateTitle = findViewById(R.id.textSpeechRateTitle)
     }
 
     private fun loadSettings() {
@@ -120,6 +130,12 @@ class SettingsActivity : AppCompatActivity() {
         textWeatherVol.text = vol.toString() + "%"
 
         seekBarWeatherVol.isEnabled = weatherEnabled
+
+        // 语速设置 (0-100 -> 0.5x-2.0x)
+        val speechRateProgress = prefs.getInt(KEY_SPEECH_RATE, 50)
+        seekBarSpeechRate.progress = speechRateProgress
+        val speechRate = 0.5f + (speechRateProgress / 50f)
+        textSpeechRate.text = String.format("%.1fx", speechRate)
 
         val scalePercentage = GlobalScaleManager.getScalePercentage(this)
         seekBarIconSize.progress = scalePercentage
@@ -181,6 +197,22 @@ class SettingsActivity : AppCompatActivity() {
                 val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 prefs.edit().putInt(KEY_WEATHER_VOLUME, seekBarWeatherVol.progress).apply()
                 Toast.makeText(this@SettingsActivity, "天气音量设为 ${seekBarWeatherVol.progress}%", Toast.LENGTH_SHORT).show()
+            }
+        })
+
+        // 语速设置
+        seekBarSpeechRate.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                val rate = 0.5f + (progress / 50f)
+                textSpeechRate.text = String.format("%.1fx", rate)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                prefs.edit().putInt(KEY_SPEECH_RATE, seekBarSpeechRate.progress).apply()
+                val rate = 0.5f + (seekBarSpeechRate.progress / 50f)
+                Toast.makeText(this@SettingsActivity, "播报语速设为 ${String.format("%.1fx", rate)}", Toast.LENGTH_SHORT).show()
             }
         })
     }
@@ -324,6 +356,10 @@ class SettingsActivity : AppCompatActivity() {
         textIconSize.textSize = scaledOptionSize
         textWeatherVol.textSize = scaledOptionSize
         textNoCommonApps.textSize = scaledOptionSize
+        textSpeechRate.textSize = scaledOptionSize
+
+        // 标题文本
+        textSpeechRateTitle.textSize = scaledTitleSize
         
         // 按钮文本
         btnSetDefaultLauncher.textSize = scaledOptionSize

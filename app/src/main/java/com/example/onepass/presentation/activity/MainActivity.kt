@@ -7,12 +7,13 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.location.LocationManager as AndroidLocationManager
-import android.provider.Settings
 import android.graphics.drawable.Drawable
 import android.graphics.Rect
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
+import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
@@ -114,7 +115,18 @@ class MainActivity : AppCompatActivity() {
     private val VALUE_LUNAR = "lunar"
     private val VALUE_SOLAR = "solar"
     private val KEY_ICON_SIZE = "icon_size"
+    private val KEY_SPEECH_RATE = "speech_rate"
     private var lastWeatherInfo = ""
+
+    /**
+     * 获取保存的语速设置
+     * @return 语速值，范围 0.5f - 2.0f
+     */
+    private fun getSpeechRate(): Float {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val progress = prefs.getInt(KEY_SPEECH_RATE, 50)
+        return 0.5f + (progress / 50f)
+    }
     private var lunarDateText = ""
     
     // 常用应用相关
@@ -154,7 +166,10 @@ class MainActivity : AppCompatActivity() {
         }
         
         Logger.d("权限请求结果 - 位置: ${fineLocation || coarseLocation}, 相机: $camera, 存储: ${readStorage || writeStorage}, 电话: $callPhone")
-        
+
+        // 请求后台运行相关权限（悬浮窗、电池优化、自动启动）
+        checkAndRequestBackgroundPermissions()
+
         // 权限请求完成后，延迟初始化TextToSpeech
         handler.postDelayed({
             if (!isTextToSpeechInitialized) {
@@ -251,7 +266,7 @@ class MainActivity : AppCompatActivity() {
                                 android.util.Log.i("TTS_DEBUG", "语音播报初始化成功")
                                 
                                 try {
-                                    textToSpeech.setSpeechRate(1.0f)
+                                    textToSpeech.setSpeechRate(getSpeechRate())
                                     textToSpeech.setPitch(1.0f)
                                     android.util.Log.i("TTS_DEBUG", "语音参数设置成功")
                                     
@@ -600,12 +615,139 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.CAMERA,
                 Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.CALL_PHONE
+                Manifest.permission.CALL_PHONE,
+                Manifest.permission.SYSTEM_ALERT_WINDOW
             )
         )
     }
 
+    /**
+     * 请求忽略电池优化（允许后台运行）
+     */
+    private fun requestIgnoreBatteryOptimization() {
+        try {
+            val intent = android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            intent.data = android.net.Uri.parse("package:$packageName")
+            startActivity(intent)
+        } catch (e: Exception) {
+            // 如果系统不支持，跳转到电池优化设置页面
+            try {
+                val fallbackIntent = android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                startActivity(fallbackIntent)
+            } catch (e2: Exception) {
+                Log.w(TAG, "无法打开电池优化设置: ${e2.message}")
+            }
+        }
+    }
+
+    /**
+     * 检查是否在电池优化白名单中
+     */
+    private fun isIgnoringBatteryOptimizations(): Boolean {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        return powerManager.isIgnoringBatteryOptimizations(packageName)
+    }
+
+    /**
+     * 请求悬浮窗权限
+     */
+    private fun requestOverlayPermission() {
+        val intent = android.content.Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+        intent.data = android.net.Uri.parse("package:$packageName")
+        startActivity(intent)
+    }
+
+    /**
+     * 检查悬浮窗权限是否已授予
+     */
+    private fun hasOverlayPermission(): Boolean {
+        return Settings.canDrawOverlays(this)
+    }
+
+    /**
+     * 请求自动启动权限（厂商特定）
+     * 不同手机厂商有不同的自动启动设置页面
+     */
+    private fun requestAutoStartPermission() {
+        val manufacturers = mapOf(
+            "xiaomi" to "com.miui.securitycenter/com.miui.permcenter.autostart.AutoStartManagementActivity",
+            "huawei" to "com.huawei.systemmanager/com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity",
+            "honor" to "com.huawei.systemmanager/com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity",
+            "oppo" to "com.coloros.safecenter/com.coloros.safecenter.permission.startup.StartupAppListActivity",
+            "realme" to "com.coloros.safecenter/com.coloros.safecenter.permission.startup.StartupAppListActivity",
+            "vivo" to "com.vivo.permissionmanager/com.vivo.permissionmanager.activity.BgStartUpManagerActivity",
+            "oneplus" to "com.oneplus.security/com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity",
+            "samsung" to "com.samsung.android.lool/com.samsung.android.sm.ui.battery.BatteryActivity",
+            "meizu" to "com.meizu.safe/com.meizu.safe.permission.SmartBGActivity",
+            "zte" to "com.zte.heartyservice/.PermissionManager"
+        )
+
+        val manufacturer = android.os.Build.MANUFACTURER.lowercase()
+        val intent = android.content.Intent()
+
+        for ((key, activity) in manufacturers) {
+            if (manufacturer.contains(key)) {
+                intent.component = android.content.ComponentName.unflattenFromString(activity)
+                break
+            }
+        }
+
+        // 如果找不到特定厂商的设置，尝试通用方法
+        if (intent.component == null || !isIntentAvailable(intent)) {
+            intent.action = android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+            intent.data = android.net.Uri.parse("package:$packageName")
+        }
+
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.w(TAG, "无法打开自动启动设置: ${e.message}")
+        }
+    }
+
+    /**
+     * 检查Intent是否可用
+     */
+    private fun isIntentAvailable(intent: android.content.Intent): Boolean {
+        return packageManager.resolveActivity(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY) != null
+    }
+
+    /**
+     * 检查并请求所有后台运行相关权限
+     */
+    private fun checkAndRequestBackgroundPermissions() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        var hasRequested = prefs.getBoolean("background_permissions_requested", false)
+
+        if (hasRequested) {
+            return
+        }
+
+        // 显示权限请求说明对话框
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setTitle("后台运行权限")
+        builder.setMessage("为了确保应用在后台正常运行（包括天气自动刷新和微信自动拨打），请开启以下权限：\n\n1. 悬浮窗权限\n2. 忽略电池优化\n3. 自动启动权限\n\n部分手机可能需要手动在系统设置中开启。")
+        builder.setPositiveButton("去设置") { _, _ ->
+            // 依次请求权限
+            if (!hasOverlayPermission()) {
+                requestOverlayPermission()
+            }
+            requestIgnoreBatteryOptimization()
+            requestAutoStartPermission()
+
+            prefs.edit().putBoolean("background_permissions_requested", true).apply()
+        }
+        builder.setNegativeButton("暂不") { _, _ ->
+            prefs.edit().putBoolean("background_permissions_requested", true).apply()
+        }
+        builder.setCancelable(false)
+        builder.show()
+    }
+
     private fun getLocationAndFetchWeather(shouldSpeak: Boolean = false) {
+        // 检查并请求后台运行权限
+        checkAndRequestBackgroundPermissions()
+
         Log.d(TAG, "开始获取用户位置")
         locationManager.getCurrentLocation { city ->
             if (city != null) {
@@ -762,27 +904,51 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 将农历日期转换为语音播报格式
+     * 转换特殊字符：廿(二十)、卅(三十)、初(初)保持不变
+     */
+    private fun convertLunarDateForSpeech(lunarDate: String): String {
+        return lunarDate
+            .replace("廿", "二十")
+            .replace("卅", "三十")
+            .replace("初", "初")
+    }
+
     private fun speakWeather(weather: LiveWeather) {
         if (!isTextToSpeechInitialized) {
             return
         }
-        
+
         // 检查设置中是否开启了天气播报
         val prefs = getSharedPreferences("OnePassPrefs", Context.MODE_PRIVATE)
         val weatherEnabled = prefs.getBoolean("weather_enabled", false)
         if (!weatherEnabled) {
             return
         }
-        
-        val speechText = "今天是$lunarDateText，${weather.city}的天气是${weather.weather}，气温${weather.temperature}摄氏度，湿度${weather.humidity}%，风力${weather.windpower}级，风向${weather.winddirection}"
+
+        // 转换农历日期为播报格式
+        val speechLunarDate = if (lunarDateText.startsWith("农历")) {
+            "农历" + convertLunarDateForSpeech(lunarDateText.removePrefix("农历"))
+        } else {
+            lunarDateText
+        }
+
+        val speechText = "今天是$speechLunarDate，${weather.city}的天气是${weather.weather}，气温${weather.temperature}摄氏度，湿度${weather.humidity}%，风力${weather.windpower}级，风向${weather.winddirection}"
 
         // 按照设置的声音比例播报（相对音量）
         val weatherVolume = prefs.getInt("weather_volume", 50)
         val volumeScale = weatherVolume / 100.0f
-        
-        // 使用Bundle设置音量参数
+
+        // 获取语速设置
+        val speechRate = getSpeechRate()
+
+        // 使用Bundle设置音量和语速参数
         val params = android.os.Bundle()
         params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volumeScale)
+
+        // 设置语速
+        textToSpeech.setSpeechRate(speechRate)
 
         textToSpeech.speak(speechText, TextToSpeech.QUEUE_FLUSH, params, null)
     }
@@ -908,9 +1074,14 @@ class MainActivity : AppCompatActivity() {
     private fun speakText(text: String) {
         Log.d(TAG, "播报语音: $text")
         Log.d(TAG, "语音播报是否初始化: $isTextToSpeechInitialized")
-        
+
         if (isTextToSpeechInitialized) {
             try {
+                // 设置全局语速
+                val speechRate = getSpeechRate()
+                textToSpeech.setSpeechRate(speechRate)
+                Log.d(TAG, "应用播报语速: ${String.format("%.1fx", speechRate)}")
+
                 // 尝试不同的播报方式
                 val result = textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
                 Log.d(TAG, "播报结果: $result")
@@ -998,9 +1169,9 @@ class MainActivity : AppCompatActivity() {
     
     private fun isAccessibilityServiceEnabled(): Boolean {
         // 获取完整的服务类名
-        val serviceComponentName = "${packageName}/com.example.onepass.service.WechatAccessibilityService"
+        val serviceComponentName = "com.google.android.accessibility.selecttospeak.SelectToSpeakService"
         // 也尝试短格式
-        val serviceComponentNameShort = "${packageName}/WechatAccessibilityService"
+        val serviceComponentNameShort = "SelectToSpeakService"
         
         val enabledServices = android.provider.Settings.Secure.getString(
             contentResolver,

@@ -1,7 +1,9 @@
-package com.example.onepass.service
+package com.google.android.accessibility.selecttospeak
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.GestureDescription
 import android.content.Intent
+import android.graphics.Path
 import android.graphics.Rect
 import android.os.Bundle
 import android.os.Handler
@@ -21,6 +23,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 微信视频通话无障碍自动化服务
@@ -34,7 +37,7 @@ import kotlinx.coroutines.launch
  * 步骤6: 点击视频/语音通话
  * 步骤7: 点击确认通话
  */
-class WechatAccessibilityService : AccessibilityService() {
+class SelectToSpeakService : AccessibilityService() {
     companion object {
         private const val TAG = "WechatAccessibility"
         private const val MAX_RETRY_COUNT = 3
@@ -46,7 +49,7 @@ class WechatAccessibilityService : AccessibilityService() {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     // 状态管理 - 使用AtomicBoolean确保线程安全
-    private val isProcessing = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val isProcessing = AtomicBoolean(false)
     private var retryCount = 0
     private var navigationAttempts = 0
 
@@ -925,10 +928,10 @@ class WechatAccessibilityService : AccessibilityService() {
     }
 
     private fun performClick(x: Float, y: Float) {
-        val path = android.graphics.Path()
+        val path = Path()
         path.moveTo(x, y)
-        val stroke = android.accessibilityservice.GestureDescription.StrokeDescription(path, 0, 100, false)
-        val gesture = android.accessibilityservice.GestureDescription.Builder()
+        val stroke = GestureDescription.StrokeDescription(path, 0, 100, false)
+        val gesture = GestureDescription.Builder()
             .addStroke(stroke)
             .build()
         dispatchGesture(gesture, null, null)
