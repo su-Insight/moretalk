@@ -3,7 +3,7 @@
 <img width="150" height="150" alt="MoreTalk Logo" src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" />
 
 <div style="border: 2px solid #3B82F6; padding: 20px; margin: 20px; display: inline-block; clip-path: polygon(0 0, 15% 0, 15% 5%, 85% 5%, 85% 0, 100% 0, 100% 100%, 85% 100%, 85% 95%, 15% 95%, 15% 100%, 0 100%);">
-    <h1 style="margin: 0;">MoreTalk 「墨谈」</h1>
+    <h1 style="margin: 0;">MoreTalk 智能辅助</h1>
     <p style="color: #64748b; font-size: 1.1em;"><b>一款专为长辈定制的极简 Android 桌面启动器</b></p>
 </div>
 
@@ -21,7 +21,7 @@
 
 ## 📖 项目初衷
 
-**MoreTalk（墨谈）** 诞生于对数字鸿沟的思考。智能手机不应成为长辈生活的阻碍。我们通过“极致减法”：
+**MoreTalk** 诞生于对数字鸿沟的思考。智能手机不应成为长辈生活的阻碍。我们通过“极致减法”：
 - **移除** 繁琐的扫码、支付、广告与冗余设置。
 - **重塑** 核心通话路径，将复杂的微信视频流程转化为**一键直达**。
 - **辅助** 利用 Accessibility 自动化技术，替长辈完成所有的“中间步骤”，让每一份牵挂都即刻送达。
