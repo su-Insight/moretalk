@@ -1,6 +1,6 @@
 package com.example.onepass.utils
 
-import android.util.Log
+import com.example.onepass.utils.HistoryLog as Log
 
 object PerformanceMonitor {
     private const val TAG = "PerfMonitor"

@@ -1,7 +1,6 @@
 ﻿package com.example.onepass.service
 
 import android.content.Context
-import android.util.Log
 import com.k2fsa.sherpa.onnx.GeneratedAudio
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
@@ -13,6 +12,7 @@ import com.k2fsa.sherpa.onnx.OfflineTtsPocketModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsSupertonicModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsZipVoiceModelConfig
+import com.example.onepass.utils.HistoryLog as Log
 import kotlin.math.abs
 
 class BundledSpeechEngine(private val context: Context) : AutoCloseable {

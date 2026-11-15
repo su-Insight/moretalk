@@ -8,7 +8,6 @@ import android.graphics.Rect
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.example.onepass.domain.model.WeChatActivity
@@ -16,6 +15,7 @@ import com.example.onepass.domain.model.WeChatData
 import com.example.onepass.domain.model.WeChatId
 import com.example.onepass.service.AccessibilityNodeHelper.safeRecycle
 import com.example.onepass.service.AccessibilityNodeHelper.safeRecycleAll
+import com.example.onepass.utils.HistoryLog as Log
 import com.example.onepass.utils.PerformanceMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class SelectToSpeakService : AccessibilityService() {
     companion object {
         private const val TAG = "WechatAccessibility"
-        private const val MAX_RETRY_COUNT = 3
+        private const val MAX_RETRY_COUNT = 5
         private const val MAX_NAVIGATION_ATTEMPTS = 3
     }
 
@@ -71,6 +71,7 @@ class SelectToSpeakService : AccessibilityService() {
 
         lastWindowClassName = currentActivity
         Log.d(TAG, "Current Activity: $currentActivity, Step: ${WeChatData.index}")
+        logWechatPageState(currentActivity)
 
         // 如果正在处理，跳过新事件（使用原子操作确保线程安全）
         if (isProcessing.get()) {
@@ -396,9 +397,9 @@ class SelectToSpeakService : AccessibilityService() {
                     return@launch
                 } else {
                     // 搜索结果可能还未加载，不重试，等待下一个事件
-                    Log.d(TAG, "搜索结果未出现，继续等待")
+                    Log.d(TAG, "搜索结果未出现，记一次重试并继续等待")
+                    handleRetry("搜索结果未出现", 4)
                     setProcessing(false)
-                    scheduleNextStep(500)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "步骤4处理失败", e)
@@ -427,9 +428,9 @@ class SelectToSpeakService : AccessibilityService() {
 
                 // 确保在聊天界面
                 if (!isChatPage(currentActivity)) {
-                    Log.d(TAG, "不在聊天界面，等待")
+                    Log.d(TAG, "不在聊天界面，记一次重试并继续等待")
+                    handleRetry("不在聊天界面", 5)
                     setProcessing(false)
-                    scheduleNextStep(300)
                     return@launch
                 }
 
@@ -934,6 +935,88 @@ class SelectToSpeakService : AccessibilityService() {
         nextStepRunnable?.let {
             mainHandler.removeCallbacks(it)
             nextStepRunnable = null
+        }
+    }
+
+    private fun logWechatPageState(currentActivity: String) {
+        if (currentActivity != WeChatActivity.INDEX.id) {
+            return
+        }
+
+        var rootNode: AccessibilityNodeInfo? = null
+        try {
+            rootNode = rootInActiveWindow ?: run {
+                Log.d(TAG, "TAB_DEBUG LauncherUI，但 rootInActiveWindow 为空")
+                return
+            }
+
+            val tabLabels = listOf("微信", "通讯录", "发现", "我")
+            val summaries = mutableListOf<String>()
+            var detectedTab: String? = null
+
+            for (label in tabLabels) {
+                var nodes: List<AccessibilityNodeInfo>? = null
+                try {
+                    nodes = rootNode.findAccessibilityNodeInfosByText(label)
+                    if (nodes.isNullOrEmpty()) {
+                        summaries.add("$label: not_found")
+                        continue
+                    }
+
+                    nodes.forEachIndexed { index, node ->
+                        val rect = Rect()
+                        node.getBoundsInScreen(rect)
+                        val parent = node.parent
+                        val selfSelected = node.isSelected
+                        val parentSelected = parent?.isSelected == true
+                        val selfFocused = node.isAccessibilityFocused || node.isFocused
+                        val parentFocused = parent?.isAccessibilityFocused == true || parent?.isFocused == true
+                        val selfClickable = node.isClickable
+                        val parentClickable = parent?.isClickable == true
+
+                        if (detectedTab == null && (selfSelected || parentSelected || selfFocused || parentFocused)) {
+                            detectedTab = label
+                        }
+
+                        summaries.add(
+                            "$label[$index]{text=${node.text},viewId=${node.viewIdResourceName}," +
+                                "selected=$selfSelected/$parentSelected,focused=$selfFocused/$parentFocused," +
+                                "clickable=$selfClickable/$parentClickable,bounds=${rect.left},${rect.top},${rect.right},${rect.bottom}}"
+                        )
+                        parent?.safeRecycle()
+                    }
+                } finally {
+                    nodes?.safeRecycleAll()
+                }
+            }
+
+            var tabIdNodes: List<AccessibilityNodeInfo>? = null
+            val tabIdSummary = mutableListOf<String>()
+            try {
+                tabIdNodes = rootNode.findAccessibilityNodeInfosByViewId(WeChatId.TABLES.id)
+                tabIdNodes?.forEachIndexed { index, node ->
+                    val rect = Rect()
+                    node.getBoundsInScreen(rect)
+                    val parent = node.parent
+                    tabIdSummary.add(
+                        "idNode[$index]{text=${node.text},viewId=${node.viewIdResourceName}," +
+                            "selected=${node.isSelected}/${parent?.isSelected == true}," +
+                            "focused=${node.isAccessibilityFocused || node.isFocused}/${parent?.isAccessibilityFocused == true || parent?.isFocused == true}," +
+                            "bounds=${rect.left},${rect.top},${rect.right},${rect.bottom}}"
+                    )
+                    parent?.safeRecycle()
+                }
+            } finally {
+                tabIdNodes?.safeRecycleAll()
+            }
+
+            Log.d(
+                TAG,
+                "TAB_DEBUG activity=$currentActivity detectedTab=${detectedTab ?: "unknown"} " +
+                    "textNodes=${summaries.joinToString(" | ")} tableNodes=${tabIdSummary.joinToString(" | ")}"
+            )
+        } finally {
+            rootNode?.safeRecycle()
         }
     }
 

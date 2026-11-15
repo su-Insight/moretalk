@@ -44,6 +44,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.onepass.R
 import com.example.onepass.api.WeatherApi
+import com.example.onepass.api.WeatherApiFactory
 import com.example.onepass.location.LocationManager
 import com.example.onepass.model.AmapWeatherResponse
 import com.example.onepass.model.LiveWeather
@@ -62,17 +63,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
 import kotlin.math.max
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 import com.nlf.calendar.Solar
 import com.nlf.calendar.Lunar
 import kotlinx.coroutines.withContext
@@ -1096,37 +1093,44 @@ class MainActivity : AppCompatActivity() {
         PerformanceMonitor.startTimer("fetchWeather")
         Log.d(TAG, "开始请求天气数据")
         Log.d(TAG, "请求城市: $city")
-        Log.d(TAG, "API Key: ${AppConfig.API_KEY}")
         Log.d(TAG, "是否播报: $shouldSpeak")
-        
-        val okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
-            .writeTimeout(15, TimeUnit.SECONDS)
-            .build()
-        
-        val retrofit = Retrofit.Builder()
-            .baseUrl("https://restapi.amap.com/")
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
 
-        val weatherApi = retrofit.create(WeatherApi::class.java)
-        val call = weatherApi.getWeather(AppConfig.API_KEY, city)
+        val customKey = getSharedPreferences(AppConfig.WEATHER_API_KEY_PREFS, Context.MODE_PRIVATE)
+            .getString(AppConfig.CUSTOM_WEATHER_API_KEY, "")
+            .orEmpty()
+            .trim()
+        val keys = (listOf(customKey) + AppConfig.DEFAULT_WEATHER_API_KEYS)
+            .filter { it.isNotBlank() }
+            .distinct()
+        if (keys.isEmpty()) {
+            PerformanceMonitor.endTimer("fetchWeather")
+            showError()
+            stopRefreshAnimation()
+            return
+        }
+        requestWeatherWithFallback(WeatherApiFactory.create(), keys, 0, city, shouldSpeak)
+    }
 
-        call.enqueue(object : Callback<AmapWeatherResponse> {
+    private fun requestWeatherWithFallback(
+        weatherApi: WeatherApi,
+        keys: List<String>,
+        keyIndex: Int,
+        city: String,
+        shouldSpeak: Boolean
+    ) {
+        weatherApi.getWeather(keys[keyIndex], city).enqueue(object : Callback<AmapWeatherResponse> {
             override fun onResponse(call: Call<AmapWeatherResponse>, response: Response<AmapWeatherResponse>) {
-                PerformanceMonitor.endTimer("fetchWeather")
                 Log.d(TAG, "收到API响应")
                 Log.d(TAG, "响应状态码: ${response.code()}")
                 Log.d(TAG, "响应是否成功: ${response.isSuccessful}")
-                
+
                 if (response.isSuccessful && response.body() != null) {
                     val weatherResponse = response.body()!!
                     Log.d(TAG, "API状态: ${weatherResponse.status}")
                     Log.d(TAG, "API信息: ${weatherResponse.info}")
-                    
+
                     if (weatherResponse.status == "1" && !weatherResponse.lives.isNullOrEmpty()) {
+                        PerformanceMonitor.endTimer("fetchWeather")
                         val weather = weatherResponse.lives[0]
                         Log.d(TAG, "天气数据获取成功")
                         Log.d(TAG, "省份: ${weather.province}")
@@ -1142,28 +1146,40 @@ class MainActivity : AppCompatActivity() {
                             speakWeather(weather)
                         }
                     } else {
-                        Log.e(TAG, "天气数据获取失败")
-                        Log.e(TAG, "API状态: ${weatherResponse.status}")
-                        Log.e(TAG, "API信息: ${weatherResponse.info}")
-                        showError()
+                        tryNextWeatherKey(weatherApi, keys, keyIndex, city, shouldSpeak, weatherResponse.info)
                     }
                 } else {
-                    Log.e(TAG, "天气数据获取失败")
-                    Log.e(TAG, "错误响应码: ${response.code()}")
-                    Log.e(TAG, "错误消息: ${response.message()}")
-                    showError()
+                    tryNextWeatherKey(weatherApi, keys, keyIndex, city, shouldSpeak, response.message())
                 }
-                stopRefreshAnimation()
+                if (keyIndex == keys.lastIndex || (response.isSuccessful && response.body()?.status == "1")) {
+                    stopRefreshAnimation()
+                }
             }
 
             override fun onFailure(call: Call<AmapWeatherResponse>, t: Throwable) {
-                Log.e(TAG, "网络请求失败")
-                Log.e(TAG, "错误信息: ${t.message}")
-                Log.e(TAG, "错误堆栈: ", t)
-                showError()
-                stopRefreshAnimation()
+                tryNextWeatherKey(weatherApi, keys, keyIndex, city, shouldSpeak, t.message ?: "网络请求失败")
             }
         })
+    }
+
+    private fun tryNextWeatherKey(
+        weatherApi: WeatherApi,
+        keys: List<String>,
+        keyIndex: Int,
+        city: String,
+        shouldSpeak: Boolean,
+        error: String
+    ) {
+        if (keyIndex < keys.lastIndex) {
+            Log.w(TAG, "当前天气 Key 请求失败，尝试下一个默认 Key: $error")
+            requestWeatherWithFallback(weatherApi, keys, keyIndex + 1, city, shouldSpeak)
+            return
+        }
+
+        PerformanceMonitor.endTimer("fetchWeather")
+        Log.e(TAG, "所有天气 API Key 均请求失败: $error")
+        showError()
+        stopRefreshAnimation()
     }
 
     private fun updateWeatherUI(weather: LiveWeather) {

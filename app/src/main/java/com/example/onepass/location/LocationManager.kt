@@ -7,8 +7,8 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
-import android.util.Log
 import androidx.core.content.ContextCompat
+import com.example.onepass.utils.HistoryLog as Log
 
 class LocationManager(private val context: Context) {
     private val locationManager: LocationManager = 

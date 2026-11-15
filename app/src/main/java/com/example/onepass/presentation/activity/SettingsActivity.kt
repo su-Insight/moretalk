@@ -10,6 +10,7 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -21,10 +22,17 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
 import com.example.onepass.R
+import com.example.onepass.api.WeatherApiFactory
+import com.example.onepass.core.config.AppConfig
 import com.example.onepass.core.config.GlobalScaleManager
+import com.example.onepass.model.AmapWeatherResponse
 import com.example.onepass.service.BundledSpeechSupport
 import com.example.onepass.service.SpeechEngineMode
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -56,6 +64,9 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var btnClearDefaultLauncher: Button
 
     private lateinit var btnCommonApps: Button
+    private lateinit var btnLogHistory: Button
+    private lateinit var editWeatherApiKey: EditText
+    private lateinit var btnTestWeatherApiKey: Button
     private lateinit var switchWeather: Switch
     private lateinit var switchDirectCall: Switch
     private lateinit var switchLowBatteryReminder: Switch
@@ -85,8 +96,11 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var textIconSizeTitle: TextView
     private lateinit var textWeatherTitle: TextView
     private lateinit var textWeatherDesc: TextView
+    private lateinit var textWeatherApiKeyTitle: TextView
     private lateinit var textSpeechRateTitle: TextView
     private lateinit var textSpeechEngineTitle: TextView
+    private lateinit var textLogHistoryTitle: TextView
+    private lateinit var textLogHistoryDesc: TextView
 
     private val prefs by lazy {
         getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -136,6 +150,9 @@ class SettingsActivity : AppCompatActivity() {
         btnClearDefaultLauncher = findViewById(R.id.btnClearDefaultLauncher)
 
         btnCommonApps = findViewById(R.id.btnCommonApps)
+        btnLogHistory = findViewById(R.id.btnLogHistory)
+        editWeatherApiKey = findViewById(R.id.editWeatherApiKey)
+        btnTestWeatherApiKey = findViewById(R.id.btnTestWeatherApiKey)
         switchWeather = findViewById(R.id.switchWeather)
         switchDirectCall = findViewById(R.id.switchDirectCall)
         switchLowBatteryReminder = findViewById(R.id.switchLowBatteryReminder)
@@ -165,14 +182,21 @@ class SettingsActivity : AppCompatActivity() {
         textIconSizeTitle = findViewById(R.id.textIconSizeTitle)
         textWeatherTitle = findViewById(R.id.textWeatherTitle)
         textWeatherDesc = findViewById(R.id.textWeatherDesc)
+        textWeatherApiKeyTitle = findViewById(R.id.textWeatherApiKeyTitle)
         textSpeechRateTitle = findViewById(R.id.textSpeechRateTitle)
         textSpeechEngineTitle = findViewById(R.id.textSpeechEngineTitle)
+        textLogHistoryTitle = findViewById(R.id.textLogHistoryTitle)
+        textLogHistoryDesc = findViewById(R.id.textLogHistoryDesc)
 
         seekBarIconSize.min = 60
         seekBarIconSize.max = 100
     }
 
     private fun loadSettings() {
+        editWeatherApiKey.setText(
+            prefs.getString(AppConfig.CUSTOM_WEATHER_API_KEY, "").orEmpty()
+        )
+
         val dateStyle = prefs.getString(KEY_DATE_STYLE, VALUE_SOLAR)
         if (dateStyle == VALUE_LUNAR) {
             radioLunar.isChecked = true
@@ -219,6 +243,17 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        editWeatherApiKey.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: android.text.Editable?) {
+                prefs.edit()
+                    .putString(AppConfig.CUSTOM_WEATHER_API_KEY, s?.toString()?.trim().orEmpty())
+                    .apply()
+            }
+        })
+        btnTestWeatherApiKey.setOnClickListener { testWeatherApiKey() }
+
         dateStyleGroup.setOnCheckedChangeListener { _, checkedId ->
             val isLunar = checkedId == R.id.radioLunar
             prefs.edit()
@@ -276,6 +311,10 @@ class SettingsActivity : AppCompatActivity() {
 
         btnCommonApps.setOnClickListener {
             startActivity(Intent(this, CommonAppsActivity::class.java))
+        }
+
+        btnLogHistory.setOnClickListener {
+            startActivity(Intent(this, LogHistoryActivity::class.java))
         }
 
         btnContacts.setOnClickListener {
@@ -377,6 +416,50 @@ class SettingsActivity : AppCompatActivity() {
             speechSupport.syncResolvedEngineLabel()
             radioSpeechAuto.isChecked = true
         }
+    }
+
+    private fun testWeatherApiKey() {
+        val apiKey = editWeatherApiKey.text.toString().trim()
+        if (apiKey.isBlank()) {
+            showWeatherApiKeyTestResult(false, "请先填写高德天气 API Key")
+            return
+        }
+
+        btnTestWeatherApiKey.isEnabled = false
+        WeatherApiFactory.create().getWeather(apiKey, AppConfig.CITY)
+            .enqueue(object : Callback<AmapWeatherResponse> {
+                override fun onResponse(
+                    call: Call<AmapWeatherResponse>,
+                    response: Response<AmapWeatherResponse>
+                ) {
+                    btnTestWeatherApiKey.isEnabled = true
+                    val body = response.body()
+                    if (response.isSuccessful && body?.status == "1" && !body.lives.isNullOrEmpty()) {
+                        showWeatherApiKeyTestResult(true, "测试成功")
+                    } else {
+                        val detail = if (body != null) {
+                            "${body.info}（错误码：${body.infocode}）"
+                        } else {
+                            "HTTP ${response.code()}：${response.message()}"
+                        }
+                        showWeatherApiKeyTestResult(false, detail)
+                    }
+                }
+
+                override fun onFailure(call: Call<AmapWeatherResponse>, t: Throwable) {
+                    btnTestWeatherApiKey.isEnabled = true
+                    showWeatherApiKeyTestResult(false, t.localizedMessage ?: "网络请求失败")
+                }
+            })
+    }
+
+    private fun showWeatherApiKeyTestResult(success: Boolean, message: String) {
+        if (isFinishing) return
+        AlertDialog.Builder(this)
+            .setTitle(if (success) "测试成功" else "测试失败")
+            .setMessage(message)
+            .setPositiveButton("确定", null)
+            .show()
     }
 
     private fun setAsDefaultLauncher() {
@@ -534,8 +617,10 @@ class SettingsActivity : AppCompatActivity() {
         textBroadcastVolumeTitle.textSize = scaledTitleSize
         textIconSizeTitle.textSize = scaledTitleSize
         textWeatherTitle.textSize = scaledTitleSize
+        textWeatherApiKeyTitle.textSize = scaledTitleSize
         textSpeechEngineTitle.textSize = scaledTitleSize
         textSpeechRateTitle.textSize = scaledTitleSize
+        textLogHistoryTitle.textSize = scaledTitleSize
 
         radioLunar.textSize = scaledOptionSize
         radioSolar.textSize = scaledOptionSize
@@ -554,11 +639,13 @@ class SettingsActivity : AppCompatActivity() {
         textLowBatteryReminderDesc.textSize = GlobalScaleManager.getScaledValue(this, 16f)
         textBroadcastVolumeDesc.textSize = GlobalScaleManager.getScaledValue(this, 16f)
         textWeatherDesc.textSize = GlobalScaleManager.getScaledValue(this, 16f)
+        textLogHistoryDesc.textSize = GlobalScaleManager.getScaledValue(this, 16f)
 
         btnSetDefaultLauncher.textSize = scaledOptionSize
         btnClearDefaultLauncher.textSize = scaledOptionSize
         btnCommonApps.textSize = scaledButtonSize
         btnContacts.textSize = scaledButtonSize
+        btnLogHistory.textSize = scaledButtonSize
         // 语速显示固定大小，不随图标缩放变化。
         textSpeechRate.textSize = 24f
     }

@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -16,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.example.onepass.R
 import com.example.onepass.domain.model.Contact
+import com.example.onepass.utils.HistoryLog as Log
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat

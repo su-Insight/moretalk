@@ -2,7 +2,6 @@ package com.example.onepass.presentation.activity
 
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,6 +10,7 @@ import com.example.onepass.R
 import com.example.onepass.domain.model.Contact
 import com.example.onepass.presentation.adapter.ContactAdapter
 import com.example.onepass.utils.CryptoUtil
+import com.example.onepass.utils.HistoryLog as Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.IOException
